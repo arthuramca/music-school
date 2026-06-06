@@ -55,7 +55,7 @@ public class StudentDialog extends Dialog<Student> {
         if (!isNew) populate(student);
 
         Button ok = (Button) getDialogPane().lookupButton(saveBtn);
-        ok.setDisable(true);
+        ok.setDisable(nameField.getText().isBlank());
         nameField.textProperty().addListener((obs, o, v) -> ok.setDisable(v.isBlank()));
 
         setResultConverter(btn -> btn == saveBtn ? buildStudent(student) : null);
