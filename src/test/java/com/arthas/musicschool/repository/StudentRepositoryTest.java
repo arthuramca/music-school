@@ -36,7 +36,10 @@ class StudentRepositoryTest {
                     payment_due_day INTEGER DEFAULT 5,
                     status          TEXT    DEFAULT 'Ativo',
                     notes           TEXT    DEFAULT '',
-                    photo_path      TEXT    DEFAULT ''
+                    photo_path      TEXT    DEFAULT '',
+                    lesson_day      TEXT    DEFAULT '',
+                    lesson_time     TEXT    DEFAULT '',
+                    makeup_pending  INTEGER DEFAULT 0
                 )
                 """);
         }
