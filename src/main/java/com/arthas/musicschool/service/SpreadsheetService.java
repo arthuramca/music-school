@@ -5,6 +5,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SpreadsheetService {
@@ -25,6 +27,44 @@ public class SpreadsheetService {
             for (int i = 0; i < HEADERS.length; i++) sheet.autoSizeColumn(i);
             try (FileOutputStream fos = new FileOutputStream(file)) { wb.write(fos); }
         }
+    }
+
+    public List<Student> importFromXlsx(File file) throws IOException {
+        List<Student> students = new ArrayList<>();
+        try (Workbook wb = new XSSFWorkbook(new FileInputStream(file))) {
+            Sheet sheet = wb.getSheetAt(0);
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+                Student s = parseRow(row);
+                if (s.getName() != null && !s.getName().isBlank()) students.add(s);
+            }
+        }
+        return students;
+    }
+
+    private Student parseRow(Row row) {
+        Student s = new Student();
+        // col 0 = ID (ignorado no import)
+        s.setName(getString(row, 1));
+        s.setCpf(getString(row, 2));
+        String birth = getString(row, 3);
+        if (!birth.isBlank()) { try { s.setBirthDate(LocalDate.parse(birth)); } catch (Exception ignored) {} }
+        s.setPhone(getString(row, 4));
+        s.setEmail(getString(row, 5));
+        s.setAddress(getString(row, 6));
+        s.setInstrument(getString(row, 7));
+        s.setLevel(getString(row, 8));
+        s.setTeacher(getString(row, 9));
+        String start = getString(row, 10);
+        if (!start.isBlank()) { try { s.setStartDate(LocalDate.parse(start)); } catch (Exception ignored) {} }
+        s.setMonthlyFee(getDouble(row, 11));
+        int dueDay = (int) getLong(row, 12);
+        if (dueDay > 0) s.setPaymentDueDay(dueDay);
+        String status = getString(row, 13);
+        if (!status.isBlank()) s.setStatus(status);
+        s.setNotes(getString(row, 14));
+        return s;
     }
 
     private void createHeader(Workbook wb, Sheet sheet) {
@@ -48,7 +88,7 @@ public class SpreadsheetService {
         row.createCell(0).setCellValue(s.getId());
         row.createCell(1).setCellValue(safe(s.getName()));
         row.createCell(2).setCellValue(safe(s.getCpf()));
-        row.createCell(3).setCellValue(s.getBirthDate() != null ? s.getBirthDate().toString() : "");
+        row.createCell(3).setCellValue(s.getBirthDate()  != null ? s.getBirthDate().toString()  : "");
         row.createCell(4).setCellValue(safe(s.getPhone()));
         row.createCell(5).setCellValue(safe(s.getEmail()));
         row.createCell(6).setCellValue(safe(s.getAddress()));
@@ -60,6 +100,28 @@ public class SpreadsheetService {
         row.createCell(12).setCellValue(s.getPaymentDueDay());
         row.createCell(13).setCellValue(safe(s.getStatus()));
         row.createCell(14).setCellValue(safe(s.getNotes()));
+    }
+
+    private String getString(Row row, int col) {
+        Cell cell = row.getCell(col);
+        if (cell == null) return "";
+        return switch (cell.getCellType()) {
+            case STRING  -> cell.getStringCellValue().trim();
+            case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
+            default      -> "";
+        };
+    }
+
+    private double getDouble(Row row, int col) {
+        Cell cell = row.getCell(col);
+        if (cell == null || cell.getCellType() != CellType.NUMERIC) return 0;
+        return cell.getNumericCellValue();
+    }
+
+    private long getLong(Row row, int col) {
+        Cell cell = row.getCell(col);
+        if (cell == null || cell.getCellType() != CellType.NUMERIC) return 0;
+        return (long) cell.getNumericCellValue();
     }
 
     private String safe(String v) { return v != null ? v : ""; }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.arthas.musicschool.controller.LoginController"
+      alignment="CENTER" spacing="20" stylesheets="@styles.css"
+      style="-fx-background-color: #2c3e50;">
+    <padding><Insets top="50" right="80" bottom="50" left="80"/></padding>
+
+    <Label text="🎵 Music School"
+           style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+    <Label fx:id="subtitleLabel" text="Acesso ao Sistema"
+           style="-fx-font-size: 13px; -fx-text-fill: #bdc3c7;"/>
+
+    <VBox spacing="10" maxWidth="340"
+          style="-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 30;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 14, 0, 0, 5);">
+
+        <Label fx:id="formTitle" text="Entrar"
+               style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+        <Label text="Usuário" style="-fx-font-weight: bold;"/>
+        <TextField fx:id="usernameField" promptText="nome de usuário"/>
+
+        <Label text="Senha" style="-fx-font-weight: bold;"/>
+        <PasswordField fx:id="passwordField" promptText="senha"/>
+
+        <Label fx:id="confirmLabel" text="Confirmar senha"
+               style="-fx-font-weight: bold;" visible="false" managed="false"/>
+        <PasswordField fx:id="confirmField" promptText="confirmar senha"
+                       visible="false" managed="false"/>
+
+        <Label fx:id="errorLabel" text="" wrapText="true"
+               style="-fx-text-fill: #e74c3c; -fx-font-size: 12px;"/>
+
+        <Button fx:id="loginBtn" text="Entrar" onAction="#onLogin"
+                maxWidth="Infinity" styleClass="btn-primary">
+            <VBox.margin><Insets top="6"/></VBox.margin>
+        </Button>
+
+    </VBox>
+</VBox>

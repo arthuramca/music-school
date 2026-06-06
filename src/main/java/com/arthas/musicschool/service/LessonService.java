@@ -4,6 +4,7 @@ import com.arthas.musicschool.model.Lesson;
 import com.arthas.musicschool.repository.LessonRepository;
 
 import java.sql.SQLException;
+import java.time.YearMonth;
 import java.util.List;
 
 public class LessonService {
@@ -30,5 +31,19 @@ public class LessonService {
         if (total == 0) return "—";
         long attended = repository.countAttended(studentId);
         return String.format("%.0f%%", (attended * 100.0) / total);
+    }
+
+    public long countLessonsInCurrentMonth(int studentId) throws SQLException {
+        return repository.countInMonth(studentId, YearMonth.now().toString());
+    }
+
+    public int countConsecutiveAbsences(int studentId) throws SQLException {
+        List<Lesson> lessons = repository.findByStudent(studentId); // ordenado por data DESC
+        int count = 0;
+        for (Lesson l : lessons) {
+            if (!l.isAttended()) count++;
+            else break;
+        }
+        return count;
     }
 }

@@ -38,12 +38,14 @@ public class LessonController {
                     : "-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
             }
         });
-        colNotes.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNotes() != null ? c.getValue().getNotes() : ""));
+        colNotes.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().getNotes() != null ? c.getValue().getNotes() : ""));
     }
 
     public void setStudent(Student student) {
         this.student = student;
-        studentNameLabel.setText(student.getName() + " — " + (student.getInstrument() != null ? student.getInstrument() : ""));
+        studentNameLabel.setText(student.getName() + " — " +
+            (student.getInstrument() != null ? student.getInstrument() : ""));
         loadLessons();
     }
 
@@ -51,8 +53,16 @@ public class LessonController {
         try {
             List<Lesson> lessons = service.getLessons(student.getId());
             lessonTable.setItems(FXCollections.observableArrayList(lessons));
-            attendanceLabel.setText("Frequência: " + service.getAttendanceRate(student.getId())
-                + "  (" + lessons.size() + " aulas registradas)");
+
+            long thisMonth   = service.countLessonsInCurrentMonth(student.getId());
+            int  consecutive = service.countConsecutiveAbsences(student.getId());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("Frequência: ").append(service.getAttendanceRate(student.getId()));
+            sb.append("  |  ").append(lessons.size()).append(" aulas");
+            sb.append("  |  Mês atual: ").append(thisMonth).append("/4");
+            if (consecutive >= 2) sb.append("  |  ⚠ ").append(consecutive).append(" faltas seguidas");
+            attendanceLabel.setText(sb.toString());
         } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
         }
@@ -66,8 +76,8 @@ public class LessonController {
         ButtonType saveBtn = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
         dlg.getDialogPane().getButtonTypes().addAll(saveBtn, ButtonType.CANCEL);
 
-        DatePicker datePicker = new DatePicker(LocalDate.now());
-        CheckBox presentCheck = new CheckBox("Presente");
+        DatePicker datePicker  = new DatePicker(LocalDate.now());
+        CheckBox   presentCheck = new CheckBox("Presente");
         presentCheck.setSelected(true);
         TextField notesField = new TextField();
         notesField.setPromptText("Observações da aula...");
@@ -89,9 +99,32 @@ public class LessonController {
         });
 
         dlg.showAndWait().ifPresent(lesson -> {
-            try { service.save(lesson); loadLessons(); }
-            catch (Exception e) { new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait(); }
+            try {
+                service.save(lesson);
+                loadLessons();
+                checkAbsenceAlert();
+            } catch (Exception e) {
+                new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
+            }
         });
+    }
+
+    private void checkAbsenceAlert() {
+        try {
+            int consecutive = service.countConsecutiveAbsences(student.getId());
+            if (consecutive < 2) return;
+
+            long thisMonth = service.countLessonsInCurrentMonth(student.getId());
+            String monthInfo = thisMonth >= 4
+                ? "Meta de 4 aulas do mês já cumprida."
+                : "Aulas este mês: " + thisMonth + "/4  —  faltam " + (4 - thisMonth) + ".";
+
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Alerta de Faltas");
+            alert.setHeaderText("⚠  " + student.getName() + " acumulou " + consecutive + " faltas seguidas");
+            alert.setContentText("Entre em contato para agendar reposição.\n\n" + monthInfo);
+            alert.showAndWait();
+        } catch (Exception ignored) {}
     }
 
     @FXML

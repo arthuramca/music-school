@@ -16,24 +16,30 @@
                 <TextField fx:id="searchField" promptText="Buscar por nome, instrumento, professor..." prefWidth="280" onAction="#onSearch"/>
                 <Button text="Buscar"  onAction="#onSearch"      styleClass="btn-secondary"/>
                 <Button text="Limpar"  onAction="#onClearSearch" styleClass="btn-secondary"/>
+                <Separator orientation="VERTICAL"/>
+                <Button text="⛶" onAction="#onToggleFullscreen" styleClass="btn-secondary" prefWidth="32">
+                    <tooltip><Tooltip text="Tela cheia (F11)"/></tooltip>
+                </Button>
             </HBox>
             <HBox styleClass="action-bar" spacing="8" alignment="CENTER_LEFT">
                 <padding><Insets top="6" right="16" bottom="6" left="16"/></padding>
-                <Button text="+ Novo Aluno" onAction="#onNewStudent"  styleClass="btn-primary"/>
-                <Button text="Editar"       onAction="#onEditStudent" styleClass="btn-secondary"/>
-                <Button text="Excluir"      onAction="#onDeleteStudent" styleClass="btn-danger"/>
+                <Button text="+ Novo Aluno"  onAction="#onNewStudent"    styleClass="btn-primary"/>
+                <Button text="Editar"        onAction="#onEditStudent"   styleClass="btn-secondary"/>
+                <Button text="Excluir"       onAction="#onDeleteStudent" styleClass="btn-danger"/>
                 <Separator orientation="VERTICAL"/>
-                <Button text="💰 Pagamentos" onAction="#onPayments" styleClass="btn-payment"/>
-                <Button text="📅 Aulas"      onAction="#onLessons"  styleClass="btn-lesson"/>
+                <Button text="💰 Pagamentos" onAction="#onPayments"      styleClass="btn-payment"/>
+                <Button text="📅 Aulas"      onAction="#onLessons"       styleClass="btn-lesson"/>
                 <Separator orientation="VERTICAL"/>
                 <Label text="Instrumento:" style="-fx-font-weight: bold;"/>
                 <ComboBox fx:id="instrumentFilter" prefWidth="140"/>
                 <Label text="Status:" style="-fx-font-weight: bold;"/>
                 <ComboBox fx:id="statusFilter" prefWidth="110"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="📊 Gráficos"       onAction="#onCharts"  styleClass="btn-chart"/>
-                <Button text="⬆ Exportar .xlsx"  onAction="#onExport"  styleClass="btn-success"/>
-                <Button text="💾 Backup"          onAction="#onBackup"  styleClass="btn-backup"/>
+                <Button text="📊 Gráficos"      onAction="#onCharts"       styleClass="btn-chart"/>
+                <Button text="⬇ Importar"       onAction="#onImport"       styleClass="btn-secondary"/>
+                <Button text="⬆ Exportar .xlsx" onAction="#onExport"       styleClass="btn-success"/>
+                <Button text="📄 Gerar PDF"      onAction="#onGeneratePdf"  styleClass="btn-pdf"/>
+                <Button text="💾 Backup"         onAction="#onBackup"       styleClass="btn-backup"/>
             </HBox>
             <Separator/>
         </VBox>
@@ -65,6 +71,9 @@
             <Label fx:id="statusLabel" text="Pronto"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="countLabel" text="0 alunos" styleClass="count-label"/>
+            <Separator orientation="VERTICAL"/>
+            <Label fx:id="clockLabel" text="--/--/----  --:--:--"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
         </HBox>
     </bottom>
 </BorderPane>

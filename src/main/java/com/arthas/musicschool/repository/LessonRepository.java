@@ -53,6 +53,18 @@ public class LessonRepository {
         return 0;
     }
 
+    public long countInMonth(int studentId, String yearMonth) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM lessons WHERE student_id=? AND lesson_date LIKE ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, studentId);
+            stmt.setString(2, yearMonth + "-%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getLong(1);
+            }
+        }
+        return 0;
+    }
+
     public Lesson save(Lesson l) throws SQLException {
         return l.getId() == 0 ? insert(l) : update(l);
     }

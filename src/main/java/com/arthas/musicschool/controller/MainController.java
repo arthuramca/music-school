@@ -2,6 +2,8 @@ package com.arthas.musicschool.controller;
 
 import com.arthas.musicschool.model.Student;
 import com.arthas.musicschool.service.*;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -11,16 +13,19 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 public class MainController {
 
@@ -37,20 +42,38 @@ public class MainController {
     @FXML private TableColumn<Student, String> colFee;
     @FXML private Label statusLabel;
     @FXML private Label countLabel;
+    @FXML private Label clockLabel;
 
-    private final StudentService studentService = new StudentService();
-    private final PaymentService paymentService = new PaymentService();
+    private static final DateTimeFormatter CLOCK_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy  HH:mm:ss");
+
+    private final StudentService     studentService     = new StudentService();
+    private final PaymentService     paymentService     = new PaymentService();
     private final SpreadsheetService spreadsheetService = new SpreadsheetService();
-    private final BackupService backupService = new BackupService();
+    private final BackupService      backupService      = new BackupService();
+    private final PdfService         pdfService         = new PdfService();
 
     @FXML
     public void initialize() {
         setupColumns();
         setupFilters();
         loadStudents();
+        startClock();
         studentTable.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) onEditStudent();
         });
+        Platform.runLater(() ->
+            studentTable.getScene().setOnKeyPressed(e -> {
+                if (e.getCode() == KeyCode.F11) onToggleFullscreen();
+            })
+        );
+    }
+
+    private void startClock() {
+        clockLabel.setText(LocalDateTime.now().format(CLOCK_FMT));
+        Timeline clock = new Timeline(new KeyFrame(Duration.seconds(1),
+            e -> clockLabel.setText(LocalDateTime.now().format(CLOCK_FMT))));
+        clock.setCycleCount(Timeline.INDEFINITE);
+        clock.play();
     }
 
     private void setupColumns() {
@@ -118,26 +141,31 @@ public class MainController {
             }
 
             String status = statusFilter.getValue();
-            if (status != null && !status.equals("Todos")) {
+            if (status != null && !status.equals("Todos"))
                 students = students.stream().filter(s -> status.equals(s.getStatus())).toList();
-            }
+
             String instr = instrumentFilter.getValue();
-            if (instr != null && !instr.equals("Todos")) {
+            if (instr != null && !instr.equals("Todos"))
                 students = students.stream().filter(s -> instr.equals(s.getInstrument())).toList();
-            }
 
             studentTable.setItems(FXCollections.observableArrayList(students));
-            long active = studentService.countActive();
+            long active  = studentService.countActive();
             long pending = paymentService.countPending();
             countLabel.setText(students.size() + " alunos");
-            statusLabel.setText("Ativos: " + active + "   |   Pagamentos pendentes/atrasados: " + pending);
+            statusLabel.setText("Ativos: " + active + "   |   Pendentes/Atrasados: " + pending);
         } catch (Exception e) {
             showError("Erro ao carregar alunos", e.getMessage());
         }
     }
 
-    @FXML void onSearch() { loadStudents(); }
+    @FXML void onSearch()      { loadStudents(); }
     @FXML void onClearSearch() { searchField.clear(); loadStudents(); }
+
+    @FXML
+    void onToggleFullscreen() {
+        Stage stage = (Stage) studentTable.getScene().getWindow();
+        stage.setFullScreen(!stage.isFullScreen());
+    }
 
     @FXML
     void onNewStudent() {
@@ -224,6 +252,26 @@ public class MainController {
     }
 
     @FXML
+    void onImport() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Importar lista de alunos");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Planilha Excel", "*.xlsx"));
+        File file = chooser.showOpenDialog(studentTable.getScene().getWindow());
+        if (file == null) return;
+        try {
+            List<Student> imported = spreadsheetService.importFromXlsx(file);
+            int saved = 0;
+            for (Student s : imported) {
+                studentService.save(s);
+                paymentService.generatePendingMonths(s);
+                saved++;
+            }
+            showInfo("Importação concluída: " + saved + " aluno(s) importado(s).");
+            loadStudents();
+        } catch (Exception e) { showError("Erro ao importar", e.getMessage()); }
+    }
+
+    @FXML
     void onExport() {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Exportar lista de alunos");
@@ -235,6 +283,22 @@ public class MainController {
             spreadsheetService.exportToXlsx(studentService.getAllStudents(), file);
             showInfo("Exportado com sucesso: " + file.getName());
         } catch (Exception e) { showError("Erro ao exportar", e.getMessage()); }
+    }
+
+    @FXML
+    void onGeneratePdf() {
+        Student selected = studentTable.getSelectionModel().getSelectedItem();
+        if (selected == null) { showInfo("Selecione um aluno para gerar a ficha."); return; }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Salvar ficha cadastral em PDF");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        chooser.setInitialFileName("ficha_" + selected.getName().replaceAll("\\s+", "_") + ".pdf");
+        File file = chooser.showSaveDialog(studentTable.getScene().getWindow());
+        if (file == null) return;
+        try {
+            pdfService.generateStudentCard(selected, file);
+            showInfo("PDF gerado: " + file.getName());
+        } catch (Exception e) { showError("Erro ao gerar PDF", e.getMessage()); }
     }
 
     @FXML
