@@ -58,6 +58,12 @@
 .btn-pdf        { -fx-background-color: #6c3483; -fx-text-fill: white; -fx-cursor: hand; -fx-background-radius: 4; -fx-padding: 5 12 5 12; }
 .btn-pdf:hover       { -fx-background-color: #5b2c6f; }
 
+.btn-agenda     { -fx-background-color: #1a5276; -fx-text-fill: white; -fx-cursor: hand; -fx-background-radius: 4; -fx-padding: 5 12 5 12; }
+.btn-agenda:hover    { -fx-background-color: #154360; }
+
+.btn-waitlist   { -fx-background-color: #117a65; -fx-text-fill: white; -fx-cursor: hand; -fx-background-radius: 4; -fx-padding: 5 12 5 12; }
+.btn-waitlist:hover  { -fx-background-color: #0e6655; }
+
 .table-view { -fx-border-color: transparent; -fx-background-color: transparent; }
 .table-view .column-header-background { -fx-background-color: #2c3e50; }
 .table-view .column-header, .table-view .filler {

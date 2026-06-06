@@ -86,12 +86,38 @@ public class StudentRepository {
         return s.getId() == 0 ? insert(s) : update(s);
     }
 
+    public List<Student> findBySlot(String day, String time) throws SQLException {
+        List<Student> list = new ArrayList<>();
+        String sql = "SELECT * FROM students WHERE lesson_day=? AND lesson_time=? ORDER BY name COLLATE NOCASE";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, day);
+            stmt.setString(2, time);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        }
+        return list;
+    }
+
+    public long countBySlot(String day, String time, int excludeId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM students WHERE lesson_day=? AND lesson_time=? AND id!=?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, day);
+            stmt.setString(2, time);
+            stmt.setInt(3, excludeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getLong(1);
+            }
+        }
+        return 0;
+    }
+
     private Student insert(Student s) throws SQLException {
         String sql = """
             INSERT INTO students (name, cpf, birth_date, phone, email, address,
                 instrument, level, teacher, start_date, monthly_fee, payment_due_day,
-                status, notes, photo_path)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                status, notes, photo_path, lesson_day, lesson_time)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """;
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(stmt, s);
@@ -107,12 +133,12 @@ public class StudentRepository {
         String sql = """
             UPDATE students SET name=?, cpf=?, birth_date=?, phone=?, email=?, address=?,
                 instrument=?, level=?, teacher=?, start_date=?, monthly_fee=?, payment_due_day=?,
-                status=?, notes=?, photo_path=?
+                status=?, notes=?, photo_path=?, lesson_day=?, lesson_time=?
             WHERE id=?
             """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             bind(stmt, s);
-            stmt.setInt(16, s.getId());
+            stmt.setInt(18, s.getId());
             stmt.executeUpdate();
         }
         return s;
@@ -141,6 +167,8 @@ public class StudentRepository {
         stmt.setString(13, safe(s.getStatus()));
         stmt.setString(14, safe(s.getNotes()));
         stmt.setString(15, safe(s.getPhotoPath()));
+        stmt.setString(16, safe(s.getLessonDay()));
+        stmt.setString(17, safe(s.getLessonTime()));
     }
 
     private Student mapRow(ResultSet rs) throws SQLException {
@@ -161,6 +189,8 @@ public class StudentRepository {
         s.setStatus(rs.getString("status"));
         s.setNotes(rs.getString("notes"));
         s.setPhotoPath(rs.getString("photo_path"));
+        s.setLessonDay(rs.getString("lesson_day"));
+        s.setLessonTime(rs.getString("lesson_time"));
         return s;
     }
 

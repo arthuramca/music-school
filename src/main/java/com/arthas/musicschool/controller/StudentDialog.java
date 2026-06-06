@@ -1,8 +1,11 @@
 package com.arthas.musicschool.controller;
 
 import com.arthas.musicschool.model.Student;
+import com.arthas.musicschool.service.StudentService;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -12,6 +15,7 @@ import javafx.stage.FileChooser;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class StudentDialog extends Dialog<Student> {
 
@@ -27,11 +31,20 @@ public class StudentDialog extends Dialog<Student> {
     private final DatePicker startDatePicker = new DatePicker();
     private final TextField feeField        = new TextField("0,00");
     private final TextField dueDayField     = new TextField("5");
-    private final ComboBox<String> statusBox = new ComboBox<>();
-    private final TextArea notesArea        = new TextArea();
-    private final ImageView photoPreview    = new ImageView();
-    private final Label photoLabel          = new Label("Nenhuma foto");
+    private final ComboBox<String> statusBox   = new ComboBox<>();
+    private final ComboBox<String> dayBox      = new ComboBox<>();
+    private final ComboBox<String> timeBox     = new ComboBox<>();
+    private final TextArea notesArea           = new TextArea();
+    private final ImageView photoPreview       = new ImageView();
+    private final Label photoLabel             = new Label("Nenhuma foto");
+    private final Label slotStatusLabel        = new Label();
     private String photoPath = "";
+
+    private static final String[] DAYS  = {"", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
+    private static final String[] TIMES = {"", "08:00","09:00","10:00","11:00","12:00","13:00",
+                                            "14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"};
+
+    private final StudentService studentService = new StudentService();
 
     public StudentDialog(Student student, javafx.stage.Window owner) {
         if (owner != null) initOwner(owner);
@@ -46,6 +59,12 @@ public class StudentDialog extends Dialog<Student> {
         levelBox.setValue("Iniciante");
         statusBox.getItems().addAll("Ativo", "Inativo", "Trancado");
         statusBox.setValue("Ativo");
+        dayBox.getItems().addAll(DAYS);
+        dayBox.setValue("");
+        timeBox.getItems().addAll(TIMES);
+        timeBox.setValue("");
+        dayBox.setOnAction(e  -> updateSlotStatus(student));
+        timeBox.setOnAction(e -> updateSlotStatus(student));
         notesArea.setPrefRowCount(2);
         notesArea.setWrapText(true);
         photoPreview.setFitWidth(70); photoPreview.setFitHeight(70); photoPreview.setPreserveRatio(true);
@@ -58,6 +77,29 @@ public class StudentDialog extends Dialog<Student> {
         Button ok = (Button) getDialogPane().lookupButton(saveBtn);
         ok.setDisable(nameField.getText().isBlank());
         nameField.textProperty().addListener((obs, o, v) -> ok.setDisable(v.isBlank()));
+
+        // Valida capacidade do slot antes de fechar o dialog
+        ok.addEventFilter(ActionEvent.ACTION, event -> {
+            String day  = dayBox.getValue();
+            String time = timeBox.getValue();
+            if (day == null || day.isBlank() || time == null || time.isBlank()) return;
+            try {
+                int excludeId = student != null ? student.getId() : 0;
+                long count = studentService.countBySlot(day, time, excludeId);
+                if (count >= 3) {
+                    slotStatusLabel.setText("Horário lotado (máx 3 alunos).");
+                    event.consume();
+                } else if (count == 2) {
+                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Este horário já tem 2 alunos. Deseja adicionar um 3º aluno?",
+                        ButtonType.YES, ButtonType.NO);
+                    confirm.setTitle("Horário quase lotado");
+                    confirm.initOwner(getDialogPane().getScene().getWindow());
+                    Optional<ButtonType> result = confirm.showAndWait();
+                    if (result.isEmpty() || result.get() != ButtonType.YES) event.consume();
+                }
+            } catch (Exception ignored) {}
+        });
 
         setResultConverter(btn -> btn == saveBtn ? buildStudent(student) : null);
     }
@@ -111,8 +153,16 @@ public class StudentDialog extends Dialog<Student> {
         HBox feeBox = new HBox(10, feeField, lbl("Vencimento (dia):"), dueDayField);
         HBox.setHgrow(feeField, Priority.ALWAYS);
         dueDayField.setMaxWidth(50);
-        g.add(lbl("Mensalidade (R$)"), 0, r); g.add(feeBox,     1, r++);
+        g.add(lbl("Mensalidade (R$)"), 0, r); g.add(feeBox,      1, r++);
         g.add(lbl("Status"),           0, r); g.add(statusBox,   1, r++);
+
+        HBox slotBox = new HBox(8, dayBox, lbl("Horário:"), timeBox, slotStatusLabel);
+        slotBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        dayBox.setPrefWidth(120);
+        timeBox.setPrefWidth(90);
+        slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
+
+        g.add(lbl("Dia da aula"),      0, r); g.add(slotBox,    1, r++);
         g.add(lbl("Observações"),      0, r); g.add(notesArea,   1, r++);
         g.add(lbl("Foto"),             0, r); g.add(photoBox,    1, r);
 
@@ -164,6 +214,8 @@ public class StudentDialog extends Dialog<Student> {
             loadPreview(photoPath);
             photoLabel.setText(Paths.get(photoPath).getFileName().toString());
         }
+        dayBox.setValue(s.getLessonDay()   != null ? s.getLessonDay()   : "");
+        timeBox.setValue(s.getLessonTime() != null ? s.getLessonTime()  : "");
     }
 
     private Student buildStudent(Student existing) {
@@ -183,7 +235,32 @@ public class StudentDialog extends Dialog<Student> {
         s.setStatus(statusBox.getValue());
         s.setNotes(notesArea.getText().trim());
         s.setPhotoPath(photoPath);
+        s.setLessonDay(dayBox.getValue() != null ? dayBox.getValue() : "");
+        s.setLessonTime(timeBox.getValue() != null ? timeBox.getValue() : "");
         return s;
+    }
+
+    private void updateSlotStatus(Student current) {
+        String day  = dayBox.getValue();
+        String time = timeBox.getValue();
+        if (day == null || day.isBlank() || time == null || time.isBlank()) {
+            slotStatusLabel.setText(""); return;
+        }
+        try {
+            int excludeId = current != null ? current.getId() : 0;
+            long count = studentService.countBySlot(day, time, excludeId);
+            slotStatusLabel.setText(switch ((int) count) {
+                case 0  -> "✓ Livre";
+                case 1  -> "1 aluno";
+                case 2  -> "⚠ 2 alunos (lotado)";
+                default -> "✗ Lotado (máx 3)";
+            });
+            slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + switch ((int) count) {
+                case 0  -> "#27ae60;";
+                case 1  -> "#f39c12;";
+                default -> "#e74c3c;";
+            });
+        } catch (Exception ignored) { slotStatusLabel.setText(""); }
     }
 
     private double parseDouble(String v) {

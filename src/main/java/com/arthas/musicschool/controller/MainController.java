@@ -1,5 +1,6 @@
 package com.arthas.musicschool.controller;
 
+import com.arthas.musicschool.model.WaitlistEntry;
 import com.arthas.musicschool.model.Student;
 import com.arthas.musicschool.service.*;
 import javafx.animation.KeyFrame;
@@ -51,6 +52,7 @@ public class MainController {
     private final SpreadsheetService spreadsheetService = new SpreadsheetService();
     private final BackupService      backupService      = new BackupService();
     private final PdfService         pdfService         = new PdfService();
+    private final WaitlistService    waitlistService    = new WaitlistService();
 
     private boolean updatingStudents = false;
 
@@ -188,9 +190,15 @@ public class MainController {
     void onEditStudent() {
         Student selected = studentTable.getSelectionModel().getSelectedItem();
         if (selected == null) { showInfo("Selecione um aluno para editar."); return; }
+        String oldDay  = selected.getLessonDay();
+        String oldTime = selected.getLessonTime();
         new StudentDialog(selected, studentTable.getScene().getWindow()).showAndWait().ifPresent(student -> {
             try {
                 studentService.save(student);
+                // Se o slot mudou, o slot antigo pode ter aberto vaga
+                boolean dayChanged  = !eq(oldDay,  student.getLessonDay());
+                boolean timeChanged = !eq(oldTime, student.getLessonTime());
+                if (dayChanged || timeChanged) checkWaitlistForSlot(oldDay, oldTime);
                 loadStudents();
             } catch (Exception e) { showError("Erro ao salvar aluno", e.getMessage()); }
         });
@@ -200,6 +208,8 @@ public class MainController {
     void onDeleteStudent() {
         Student selected = studentTable.getSelectionModel().getSelectedItem();
         if (selected == null) { showInfo("Selecione um aluno para excluir."); return; }
+        String day  = selected.getLessonDay();
+        String time = selected.getLessonTime();
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
             "Excluir \"" + selected.getName() + "\"?\nTodos os pagamentos e aulas serão removidos.",
             ButtonType.YES, ButtonType.NO);
@@ -208,8 +218,65 @@ public class MainController {
             try {
                 studentService.delete(selected.getId());
                 loadStudents();
+                checkWaitlistForSlot(day, time);
             } catch (Exception e) { showError("Erro ao excluir aluno", e.getMessage()); }
         });
+    }
+
+    @FXML
+    void onAgenda() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/agenda-view.fxml"));
+            Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Agenda Semanal");
+            stage.setScene(new Scene(loader.load(), 980, 600));
+            stage.show();
+        } catch (Exception e) { showError("Erro ao abrir agenda", e.getMessage()); }
+    }
+
+    @FXML
+    void onWaitlist() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/waitlist-view.fxml"));
+            Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Fila de Espera");
+            stage.setScene(new Scene(loader.load(), 750, 500));
+            stage.show();
+        } catch (Exception e) { showError("Erro ao abrir fila de espera", e.getMessage()); }
+    }
+
+    private void checkWaitlistForSlot(String day, String time) {
+        if (day == null || day.isBlank() || time == null || time.isBlank()) return;
+        try {
+            long remaining = studentService.countBySlot(day, time, 0);
+            if (remaining >= 2) return; // ainda lotado
+            List<WaitlistEntry> fila = waitlistService.findBySlot(day, time);
+            if (fila.isEmpty()) return;
+            WaitlistEntry w = fila.get(0);
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Vaga disponível!");
+            alert.setHeaderText("Horário livre: " + day + " às " + time);
+            alert.setContentText(
+                "Aluno na fila de espera:\n\n" +
+                "Nome:        " + w.getName() + "\n" +
+                "Telefone:    " + safe(w.getPhone()) + "\n" +
+                "E-mail:      " + safe(w.getEmail()) + "\n" +
+                "Instrumento: " + safe(w.getInstrument()) + "\n\n" +
+                (fila.size() > 1 ? "Total na fila para este horário: " + fila.size() + " aluno(s)." : "")
+            );
+            alert.initOwner(studentTable.getScene().getWindow());
+            alert.showAndWait();
+        } catch (Exception ignored) {}
+    }
+
+    private boolean eq(String a, String b) {
+        if (a == null) a = "";
+        if (b == null) b = "";
+        return a.equals(b);
     }
 
     @FXML

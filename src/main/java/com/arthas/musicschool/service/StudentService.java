@@ -24,4 +24,12 @@ public class StudentService {
     public long countActive() throws SQLException {
         return repository.findByStatus("Ativo").size();
     }
+
+    public List<Student> findBySlot(String day, String time) throws SQLException {
+        return repository.findBySlot(day, time);
+    }
+
+    public long countBySlot(String day, String time, int excludeId) throws SQLException {
+        return repository.countBySlot(day, time, excludeId);
+    }
 }

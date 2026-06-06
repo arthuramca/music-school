@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.arthas.musicschool.controller.AgendaController"
+      spacing="0" stylesheets="@styles.css">
+
+    <HBox styleClass="toolbar" spacing="10" alignment="CENTER_LEFT">
+        <padding><Insets top="10" right="16" bottom="10" left="16"/></padding>
+        <Label text="📅 Agenda Semanal" styleClass="app-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="↺ Atualizar" onAction="#refresh" styleClass="btn-secondary"/>
+    </HBox>
+
+    <HBox style="-fx-background-color: #f8f9fa; -fx-padding: 6 16 6 16;" spacing="20">
+        <Label style="-fx-font-size: 11px;">
+            <graphic>
+                <HBox spacing="6" alignment="CENTER_LEFT">
+                    <Label text="■" style="-fx-text-fill: #27ae60;"/>
+                    <Label text="Livre / 1-2 alunos"/>
+                    <Label text="■" style="-fx-text-fill: #e67e22;"/>
+                    <Label text="3 alunos (lotado)"/>
+                    <Label text="■" style="-fx-text-fill: #bdc3c7;"/>
+                    <Label text="Vazio"/>
+                </HBox>
+            </graphic>
+        </Label>
+    </HBox>
+
+    <ScrollPane fx:id="scrollPane" VBox.vgrow="ALWAYS" fitToWidth="true"
+                style="-fx-background-color: white;"/>
+</VBox>

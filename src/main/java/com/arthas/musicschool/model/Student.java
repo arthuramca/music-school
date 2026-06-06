@@ -20,6 +20,8 @@ public class Student {
     private String status;
     private String notes;
     private String photoPath;
+    private String lessonDay;
+    private String lessonTime;
 
     public Student() {
         this.paymentDueDay = 5;
@@ -74,6 +76,12 @@ public class Student {
 
     public String getPhotoPath() { return photoPath; }
     public void setPhotoPath(String photoPath) { this.photoPath = photoPath; }
+
+    public String getLessonDay()  { return lessonDay; }
+    public void setLessonDay(String lessonDay)   { this.lessonDay  = lessonDay; }
+
+    public String getLessonTime() { return lessonTime; }
+    public void setLessonTime(String lessonTime) { this.lessonTime = lessonTime; }
 
     @Override
     public String toString() {

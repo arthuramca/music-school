@@ -75,6 +75,25 @@ public class DatabaseManager {
                     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
                 )
                 """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS waitlist (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name            TEXT    NOT NULL,
+                    phone           TEXT    DEFAULT '',
+                    email           TEXT    DEFAULT '',
+                    instrument      TEXT    DEFAULT '',
+                    preferred_day   TEXT    DEFAULT '',
+                    preferred_time  TEXT    DEFAULT '',
+                    registered_date TEXT    DEFAULT '',
+                    notes           TEXT    DEFAULT ''
+                )
+                """);
+        }
+        // Migracoes para colunas adicionadas apos a criacao inicial
+        for (String col : new String[]{"lesson_day TEXT DEFAULT ''", "lesson_time TEXT DEFAULT ''"}) {
+            try (Statement s = conn.createStatement()) {
+                s.execute("ALTER TABLE students ADD COLUMN " + col);
+            } catch (SQLException ignored) {}
         }
     }
 

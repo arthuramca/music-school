@@ -36,6 +36,8 @@
                 <ComboBox fx:id="statusFilter" prefWidth="110"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Button text="📊 Gráficos"      onAction="#onCharts"       styleClass="btn-chart"/>
+                <Button text="🗓 Agenda"         onAction="#onAgenda"       styleClass="btn-agenda"/>
+                <Button text="⏳ Fila Espera"    onAction="#onWaitlist"     styleClass="btn-waitlist"/>
                 <Button text="⬇ Importar"       onAction="#onImport"       styleClass="btn-secondary"/>
                 <Button text="⬆ Exportar .xlsx" onAction="#onExport"       styleClass="btn-success"/>
                 <Button text="📄 Gerar PDF"      onAction="#onGeneratePdf"  styleClass="btn-pdf"/>

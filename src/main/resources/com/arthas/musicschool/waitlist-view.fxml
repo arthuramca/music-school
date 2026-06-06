@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.arthas.musicschool.controller.WaitlistController"
+      spacing="0" stylesheets="@styles.css">
+
+    <HBox styleClass="toolbar" spacing="10" alignment="CENTER_LEFT">
+        <padding><Insets top="10" right="16" bottom="10" left="16"/></padding>
+        <Label text="⏳ Fila de Espera" styleClass="app-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="+ Adicionar" onAction="#onAdd"    styleClass="btn-primary"/>
+        <Button text="Remover"     onAction="#onDelete" styleClass="btn-danger"/>
+    </HBox>
+
+    <TableView fx:id="waitlistTable" VBox.vgrow="ALWAYS" tableMenuButtonVisible="true">
+        <columns>
+            <TableColumn fx:id="colName"       text="Nome"         prefWidth="180" minWidth="120"/>
+            <TableColumn fx:id="colPhone"      text="Telefone"     prefWidth="130" minWidth="90"/>
+            <TableColumn fx:id="colInstrument" text="Instrumento"  prefWidth="130" minWidth="80"/>
+            <TableColumn fx:id="colSlot"       text="Dia / Horário" prefWidth="150" minWidth="100"/>
+            <TableColumn fx:id="colDate"       text="Cadastrado em" prefWidth="120" minWidth="90"/>
+        </columns>
+        <placeholder>
+            <Label text="Nenhum aluno na fila de espera."/>
+        </placeholder>
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+        </columnResizePolicy>
+    </TableView>
+
+    <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="10">
+        <padding><Insets top="5" right="16" bottom="5" left="16"/></padding>
+        <Label fx:id="countLabel" text="0 na fila" styleClass="count-label"/>
+    </HBox>
+</VBox>
