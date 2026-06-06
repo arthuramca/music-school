@@ -66,6 +66,7 @@ public class MainController {
         setupFilters();
         loadStudents();
         startClock();
+        setupContextMenu();
         studentTable.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) onEditStudent();
         });
@@ -74,6 +75,65 @@ public class MainController {
                 if (e.getCode() == KeyCode.F11) onToggleFullscreen();
             })
         );
+    }
+
+    private void setupContextMenu() {
+        ContextMenu menu = new ContextMenu();
+        menu.setStyle("-fx-background-color: white; -fx-border-color: #cccccc; -fx-border-width: 1; -fx-effect: dropshadow(gaussian,rgba(0,0,0,0.15),6,0,0,3);");
+
+        menu.getItems().addAll(
+            ctxItem("✏   Editar",             "#2c3e50", "#3498db", e -> onEditStudent()),
+            ctxItem("📋  Aulas",              "#2c3e50", "#3498db", e -> onLessons()),
+            ctxItem("💰  Pagamentos",         "#2c3e50", "#3498db", e -> onPayments()),
+            ctxItem("🔄  Agendar Reposição",  "#2c3e50", "#3498db", e -> openMakeupForSelected()),
+            ctxItem("📄  Gerar PDF",          "#2c3e50", "#3498db", e -> onGeneratePdf()),
+            new SeparatorMenuItem(),
+            ctxItem("🗑  Excluir",            "#e74c3c", "#c0392b", e -> onDeleteStudent())
+        );
+
+        studentTable.setRowFactory(tv -> {
+            TableRow<Student> row = new TableRow<>();
+            row.setOnContextMenuRequested(e -> {
+                if (!row.isEmpty()) {
+                    studentTable.getSelectionModel().select(row.getItem());
+                    menu.show(row, e.getScreenX(), e.getScreenY());
+                }
+            });
+            row.setOnMousePressed(e -> {
+                if (menu.isShowing()) menu.hide();
+            });
+            return row;
+        });
+    }
+
+    private CustomMenuItem ctxItem(String text, String color, String hoverBg,
+                                   javafx.event.EventHandler<javafx.event.ActionEvent> action) {
+        Label lbl = new Label(text);
+        lbl.setPrefWidth(210);
+        lbl.setPadding(new Insets(7, 16, 7, 12));
+        String normal = "-fx-text-fill:" + color + "; -fx-font-size:13px; -fx-background-color:transparent; -fx-cursor:hand;";
+        String hover  = "-fx-text-fill:white; -fx-font-size:13px; -fx-background-color:" + hoverBg + "; -fx-cursor:hand;";
+        lbl.setStyle(normal);
+        lbl.setOnMouseEntered(e -> lbl.setStyle(hover));
+        lbl.setOnMouseExited(e -> lbl.setStyle(normal));
+        CustomMenuItem item = new CustomMenuItem(lbl, true);
+        item.setOnAction(action);
+        return item;
+    }
+
+    private void openMakeupForSelected() {
+        Student selected = studentTable.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/makeup-view.fxml"));
+            Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Reposições — " + selected.getName());
+            stage.setScene(new Scene(loader.load(), 780, 560));
+            stage.showAndWait();
+            loadStudents();
+        } catch (Exception e) { showError("Erro ao abrir reposições", e.getMessage()); }
     }
 
     private void startClock() {

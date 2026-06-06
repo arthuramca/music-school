@@ -92,3 +92,9 @@
 .chart-total { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; }
 
 .text-field:focused { -fx-border-color: #3498db; -fx-border-width: 0 0 2 0; }
+
+.context-menu { -fx-background-color: white; -fx-border-color: #ccc; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 6, 0, 0, 3); }
+.menu-item { -fx-background-color: transparent; }
+.menu-item .label { -fx-text-fill: #2c3e50; }
+.menu-item:hover, .menu-item:focused { -fx-background-color: #3498db; }
+.menu-item:hover .label, .menu-item:focused .label { -fx-text-fill: white; }
