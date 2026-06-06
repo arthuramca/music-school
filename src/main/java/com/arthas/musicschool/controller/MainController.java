@@ -175,7 +175,7 @@ public class MainController {
 
     @FXML
     void onNewStudent() {
-        new StudentDialog(null).showAndWait().ifPresent(student -> {
+        new StudentDialog(null, studentTable.getScene().getWindow()).showAndWait().ifPresent(student -> {
             try {
                 studentService.save(student);
                 paymentService.generatePendingMonths(student);
@@ -188,7 +188,7 @@ public class MainController {
     void onEditStudent() {
         Student selected = studentTable.getSelectionModel().getSelectedItem();
         if (selected == null) { showInfo("Selecione um aluno para editar."); return; }
-        new StudentDialog(selected).showAndWait().ifPresent(student -> {
+        new StudentDialog(selected, studentTable.getScene().getWindow()).showAndWait().ifPresent(student -> {
             try {
                 studentService.save(student);
                 loadStudents();
@@ -219,6 +219,7 @@ public class MainController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/payment-view.fxml"));
             Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Pagamentos — " + selected.getName());
             stage.setScene(new Scene(loader.load(), 700, 500));
@@ -236,6 +237,7 @@ public class MainController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/lesson-view.fxml"));
             Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Aulas — " + selected.getName());
             stage.setScene(new Scene(loader.load(), 600, 450));
@@ -250,6 +252,7 @@ public class MainController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/chart-view.fxml"));
             Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Gráficos");
             stage.setScene(new Scene(loader.load(), 750, 500));

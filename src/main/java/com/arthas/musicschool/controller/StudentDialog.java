@@ -33,7 +33,8 @@ public class StudentDialog extends Dialog<Student> {
     private final Label photoLabel          = new Label("Nenhuma foto");
     private String photoPath = "";
 
-    public StudentDialog(Student student) {
+    public StudentDialog(Student student, javafx.stage.Window owner) {
+        if (owner != null) initOwner(owner);
         boolean isNew = student == null;
         setTitle(isNew ? "Novo Aluno" : "Editar Aluno");
         setHeaderText(isNew ? "Cadastrar novo aluno" : "Editar dados do aluno");
