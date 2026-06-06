@@ -52,6 +52,8 @@ public class MainController {
     private final BackupService      backupService      = new BackupService();
     private final PdfService         pdfService         = new PdfService();
 
+    private boolean updatingStudents = false;
+
     @FXML
     public void initialize() {
         setupColumns();
@@ -125,6 +127,8 @@ public class MainController {
     }
 
     private void loadStudents() {
+        if (updatingStudents) return;
+        updatingStudents = true;
         try {
             List<String> instruments = studentService.getDistinctInstruments();
             String selInstr = instrumentFilter.getValue();
@@ -155,6 +159,8 @@ public class MainController {
             statusLabel.setText("Ativos: " + active + "   |   Pendentes/Atrasados: " + pending);
         } catch (Exception e) {
             showError("Erro ao carregar alunos", e.getMessage());
+        } finally {
+            updatingStudents = false;
         }
     }
 
