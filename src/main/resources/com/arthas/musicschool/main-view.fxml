@@ -17,6 +17,9 @@
                 <Button text="Buscar"  onAction="#onSearch"      styleClass="btn-secondary"/>
                 <Button text="Limpar"  onAction="#onClearSearch" styleClass="btn-secondary"/>
                 <Separator orientation="VERTICAL"/>
+                <Button text="Acesso" onAction="#onChangePassword" styleClass="btn-secondary">
+                    <tooltip><Tooltip text="Alterar usuário e senha"/></tooltip>
+                </Button>
                 <Button text="⛶" onAction="#onToggleFullscreen" styleClass="btn-secondary" prefWidth="32">
                     <tooltip><Tooltip text="Tela cheia (F11)"/></tooltip>
                 </Button>
@@ -36,8 +39,10 @@
                 <ComboBox fx:id="statusFilter" prefWidth="110"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Button text="📊 Gráficos"      onAction="#onCharts"       styleClass="btn-chart"/>
+                <Button text="Reposicao"         onAction="#onMakeup"       styleClass="btn-makeup"/>
                 <Button text="🗓 Agenda"         onAction="#onAgenda"       styleClass="btn-agenda"/>
                 <Button text="⏳ Fila Espera"    onAction="#onWaitlist"     styleClass="btn-waitlist"/>
+                <Button text="Deduplicar"        onAction="#onDeduplicate"  styleClass="btn-secondary"/>
                 <Button text="⬇ Importar"       onAction="#onImport"       styleClass="btn-secondary"/>
                 <Button text="⬆ Exportar .xlsx" onAction="#onExport"       styleClass="btn-success"/>
                 <Button text="📄 Gerar PDF"      onAction="#onGeneratePdf"  styleClass="btn-pdf"/>

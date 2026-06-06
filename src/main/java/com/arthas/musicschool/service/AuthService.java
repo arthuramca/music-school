@@ -35,6 +35,24 @@ public class AuthService {
         }
     }
 
+    public String getCurrentUsername() {
+        try {
+            if (!Files.exists(AUTH_FILE)) return "";
+            Credentials creds = GSON.fromJson(Files.readString(AUTH_FILE), Credentials.class);
+            return creds.username();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public boolean changeCredentials(String currentPassword, String newUsername, String newPassword) throws IOException {
+        if (!Files.exists(AUTH_FILE)) return false;
+        Credentials existing = GSON.fromJson(Files.readString(AUTH_FILE), Credentials.class);
+        if (!existing.passwordHash().equals(hash(currentPassword))) return false;
+        Files.writeString(AUTH_FILE, GSON.toJson(new Credentials(newUsername, hash(newPassword))));
+        return true;
+    }
+
     private String hash(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

@@ -1,6 +1,8 @@
 package com.arthas.musicschool.controller;
 
+import com.arthas.musicschool.model.Makeup;
 import com.arthas.musicschool.model.Student;
+import com.arthas.musicschool.service.MakeupService;
 import com.arthas.musicschool.service.StudentService;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -24,6 +26,7 @@ public class AgendaController {
     };
 
     private final StudentService studentService = new StudentService();
+    private final MakeupService  makeupService  = new MakeupService();
 
     @FXML
     public void initialize() {
@@ -38,14 +41,21 @@ public class AgendaController {
         try {
             List<Student> all = studentService.getAllStudents();
 
-            // Montar mapa (dia, hora) -> lista de alunos
             Map<String, List<Student>> slotMap = new HashMap<>();
             for (Student s : all) {
                 String day  = s.getLessonDay();
                 String time = s.getLessonTime();
                 if (day == null || day.isBlank() || time == null || time.isBlank()) continue;
-                String key = day + "|" + time;
-                slotMap.computeIfAbsent(key, k -> new ArrayList<>()).add(s);
+                slotMap.computeIfAbsent(day + "|" + time, k -> new ArrayList<>()).add(s);
+            }
+
+            Map<String, List<Makeup>> makeupMap = new HashMap<>();
+            for (String day : DAYS) {
+                for (String time : TIMES) {
+                    List<Makeup> makeups = makeupService.findBySlot(day, time);
+                    if (!makeups.isEmpty())
+                        makeupMap.put(day + "|" + time, makeups);
+                }
             }
 
             GridPane grid = new GridPane();
@@ -74,8 +84,9 @@ public class AgendaController {
                 grid.add(timeCell(TIMES[t]), 0, t + 1);
                 for (int d = 0; d < DAYS.length; d++) {
                     String key = DAYS[d] + "|" + TIMES[t];
-                    List<Student> inSlot = slotMap.getOrDefault(key, List.of());
-                    grid.add(slotCell(inSlot), d + 1, t + 1);
+                    List<Student> inSlot  = slotMap.getOrDefault(key, List.of());
+                    List<Makeup>  makeups = makeupMap.getOrDefault(key, List.of());
+                    grid.add(slotCell(inSlot, makeups), d + 1, t + 1);
                 }
             }
 
@@ -106,20 +117,14 @@ public class AgendaController {
         return l;
     }
 
-    private VBox slotCell(List<Student> students) {
+    private VBox slotCell(List<Student> students, List<Makeup> makeups) {
         VBox box = new VBox(3);
         box.setPadding(new Insets(4, 6, 4, 6));
         box.setMinHeight(48);
         box.setMaxWidth(Double.MAX_VALUE);
 
-        String bg;
-        if (students.isEmpty()) {
-            bg = "#f8f9fa";
-        } else if (students.size() <= 2) {
-            bg = "#d5f5e3"; // verde claro
-        } else {
-            bg = "#fdebd0"; // laranja claro
-        }
+        int total = students.size() + makeups.size();
+        String bg = total == 0 ? "#f8f9fa" : total <= 2 ? "#d5f5e3" : "#fdebd0";
         box.setStyle("-fx-background-color: " + bg + "; -fx-border-color: #dfe6e9; -fx-border-width: 1;");
 
         for (Student s : students) {
@@ -130,8 +135,16 @@ public class AgendaController {
             box.getChildren().addAll(name, instr);
         }
 
-        if (students.size() >= 3) {
-            Label warn = new Label("⚠ 3 alunos");
+        for (Makeup m : makeups) {
+            Label name = new Label("(R) " + (m.getStudentName() != null ? m.getStudentName() : ""));
+            name.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #7d3c98;");
+            Label instr = new Label(m.getStudentInstrument() != null ? m.getStudentInstrument() : "");
+            instr.setStyle("-fx-font-size: 10px; -fx-text-fill: #a569bd;");
+            box.getChildren().addAll(name, instr);
+        }
+
+        if (total >= 3) {
+            Label warn = new Label("⚠ " + total + " alunos");
             warn.setStyle("-fx-font-size: 10px; -fx-text-fill: #e67e22; -fx-font-weight: bold;");
             box.getChildren().add(warn);
         }

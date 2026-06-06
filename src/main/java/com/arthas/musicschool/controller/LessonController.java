@@ -3,6 +3,7 @@ package com.arthas.musicschool.controller;
 import com.arthas.musicschool.model.Lesson;
 import com.arthas.musicschool.model.Student;
 import com.arthas.musicschool.service.LessonService;
+import com.arthas.musicschool.service.StudentService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -20,7 +21,8 @@ public class LessonController {
     @FXML private TableColumn<Lesson, String> colAttended;
     @FXML private TableColumn<Lesson, String> colNotes;
 
-    private final LessonService service = new LessonService();
+    private final LessonService   service        = new LessonService();
+    private final StudentService  studentService = new StudentService();
     private Student student;
 
     @FXML
@@ -54,14 +56,18 @@ public class LessonController {
             List<Lesson> lessons = service.getLessons(student.getId());
             lessonTable.setItems(FXCollections.observableArrayList(lessons));
 
-            long thisMonth   = service.countLessonsInCurrentMonth(student.getId());
-            int  consecutive = service.countConsecutiveAbsences(student.getId());
+            long thisMonth        = service.countLessonsInCurrentMonth(student.getId());
+            long absencesThisMonth = service.countAbsencesInCurrentMonth(student.getId());
+            int  consecutive      = service.countConsecutiveAbsences(student.getId());
 
             StringBuilder sb = new StringBuilder();
             sb.append("Frequência: ").append(service.getAttendanceRate(student.getId()));
             sb.append("  |  ").append(lessons.size()).append(" aulas");
             sb.append("  |  Mês atual: ").append(thisMonth).append("/4");
-            if (consecutive >= 2) sb.append("  |  ⚠ ").append(consecutive).append(" faltas seguidas");
+            if (absencesThisMonth > 0)
+                sb.append("  |  ").append(absencesThisMonth).append(" falta(s) no mês");
+            if (consecutive >= 2)
+                sb.append("  |  ⚠ ").append(consecutive).append(" seguidas");
             attendanceLabel.setText(sb.toString());
         } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
@@ -71,6 +77,7 @@ public class LessonController {
     @FXML
     void onRegisterLesson() {
         Dialog<Lesson> dlg = new Dialog<>();
+        dlg.initOwner(lessonTable.getScene().getWindow());
         dlg.setTitle("Registrar Aula");
         dlg.setHeaderText("Aluno: " + student.getName());
         ButtonType saveBtn = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
@@ -100,8 +107,21 @@ public class LessonController {
 
         dlg.showAndWait().ifPresent(lesson -> {
             try {
+                long prevTotal    = service.countLessonsInCurrentMonth(student.getId());
+                long prevAbsences = service.countAbsencesInCurrentMonth(student.getId());
+
                 service.save(lesson);
                 loadLessons();
+
+                if (!lesson.isAttended()) {
+                    long newTotal   = prevTotal + 1;
+                    long newAbs     = prevAbsences + 1;
+                    long prevNeeded = Math.max(0, prevAbsences - Math.max(0, prevTotal - 4));
+                    long newNeeded  = Math.max(0, newAbs - Math.max(0, newTotal - 4));
+                    if (newNeeded > prevNeeded)
+                        studentService.adjustMakeupPending(student.getId(), (int)(newNeeded - prevNeeded));
+                }
+
                 checkAbsenceAlert();
             } catch (Exception e) {
                 new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
@@ -111,20 +131,32 @@ public class LessonController {
 
     private void checkAbsenceAlert() {
         try {
-            int consecutive = service.countConsecutiveAbsences(student.getId());
-            if (consecutive < 2) return;
+            long absencesThisMonth = service.countAbsencesInCurrentMonth(student.getId());
+            int  consecutive       = service.countConsecutiveAbsences(student.getId());
 
-            long thisMonth = service.countLessonsInCurrentMonth(student.getId());
-            String monthInfo = thisMonth >= 4
+            boolean monthlyAlert     = absencesThisMonth >= 3;
+            boolean consecutiveAlert = consecutive >= 2;
+            if (!monthlyAlert && !consecutiveAlert) return;
+
+            long totalThisMonth = service.countLessonsInCurrentMonth(student.getId());
+            String monthInfo = totalThisMonth >= 4
                 ? "Meta de 4 aulas do mês já cumprida."
-                : "Aulas este mês: " + thisMonth + "/4  —  faltam " + (4 - thisMonth) + ".";
+                : "Aulas este mês: " + totalThisMonth + "/4  —  faltam " + (4 - totalThisMonth) + ".";
+
+            String header = monthlyAlert
+                ? "⚠  " + student.getName() + " tem " + absencesThisMonth + " faltas no mês"
+                : "⚠  " + student.getName() + " tem " + consecutive + " faltas consecutivas";
 
             Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.initOwner(lessonTable.getScene().getWindow());
             alert.setTitle("Alerta de Faltas");
-            alert.setHeaderText("⚠  " + student.getName() + " acumulou " + consecutive + " faltas seguidas");
-            alert.setContentText("Entre em contato para agendar reposição.\n\n" + monthInfo);
+            alert.setHeaderText(header);
+            alert.setContentText("Entre em contato e agende uma reposição.\n\n" + monthInfo);
+            alert.getButtonTypes().setAll(new ButtonType("Ciente", ButtonBar.ButtonData.OK_DONE));
             alert.showAndWait();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            System.err.println("Erro ao verificar faltas: " + e.getMessage());
+        }
     }
 
     @FXML
@@ -133,6 +165,7 @@ public class LessonController {
         if (selected == null) return;
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
             "Excluir aula do dia " + selected.getLessonDate() + "?", ButtonType.YES, ButtonType.NO);
+        confirm.initOwner(lessonTable.getScene().getWindow());
         confirm.showAndWait().filter(b -> b == ButtonType.YES).ifPresent(b -> {
             try { service.delete(selected.getId()); loadLessons(); }
             catch (Exception e) { new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait(); }

@@ -37,6 +37,10 @@ public class LessonService {
         return repository.countInMonth(studentId, YearMonth.now().toString());
     }
 
+    public long countAbsencesInCurrentMonth(int studentId) throws SQLException {
+        return repository.countAbsencesInMonth(studentId, YearMonth.now().toString());
+    }
+
     public int countConsecutiveAbsences(int studentId) throws SQLException {
         List<Lesson> lessons = repository.findByStudent(studentId); // ordenado por data DESC
         int count = 0;

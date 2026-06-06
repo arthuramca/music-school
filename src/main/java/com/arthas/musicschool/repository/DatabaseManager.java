@@ -88,11 +88,32 @@ public class DatabaseManager {
                     notes           TEXT    DEFAULT ''
                 )
                 """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS makeups (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id     INTEGER NOT NULL,
+                    scheduled_date TEXT    DEFAULT '',
+                    notes          TEXT    DEFAULT '',
+                    status         TEXT    DEFAULT 'Pendente',
+                    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+                )
+                """);
         }
+
         // Migracoes para colunas adicionadas apos a criacao inicial
-        for (String col : new String[]{"lesson_day TEXT DEFAULT ''", "lesson_time TEXT DEFAULT ''"}) {
+        for (String col : new String[]{
+                "lesson_day TEXT DEFAULT ''",
+                "lesson_time TEXT DEFAULT ''",
+                "makeup_pending INTEGER DEFAULT 0"}) {
             try (Statement s = conn.createStatement()) {
                 s.execute("ALTER TABLE students ADD COLUMN " + col);
+            } catch (SQLException ignored) {}
+        }
+        for (String col : new String[]{
+                "day_of_week TEXT DEFAULT ''",
+                "slot_time TEXT DEFAULT ''"}) {
+            try (Statement s = conn.createStatement()) {
+                s.execute("ALTER TABLE makeups ADD COLUMN " + col);
             } catch (SQLException ignored) {}
         }
     }

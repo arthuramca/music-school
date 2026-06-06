@@ -32,4 +32,22 @@ public class StudentService {
     public long countBySlot(String day, String time, int excludeId) throws SQLException {
         return repository.countBySlot(day, time, excludeId);
     }
+
+    public int deduplicateStudents() throws SQLException {
+        List<Integer> ids = repository.findDuplicateIds();
+        for (int id : ids) repository.delete(id);
+        return ids.size();
+    }
+
+    public boolean existsById(int id) throws SQLException {
+        return repository.existsById(id);
+    }
+
+    public void adjustMakeupPending(int studentId, int delta) throws SQLException {
+        repository.adjustMakeupPending(studentId, delta);
+    }
+
+    public void zeroMakeupPending(int studentId) throws SQLException {
+        repository.zeroMakeupPending(studentId);
+    }
 }

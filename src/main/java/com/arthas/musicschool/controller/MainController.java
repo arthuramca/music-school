@@ -8,13 +8,16 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
@@ -53,6 +56,7 @@ public class MainController {
     private final BackupService      backupService      = new BackupService();
     private final PdfService         pdfService         = new PdfService();
     private final WaitlistService    waitlistService    = new WaitlistService();
+    private final AuthService        authService        = new AuthService();
 
     private boolean updatingStudents = false;
 
@@ -224,6 +228,19 @@ public class MainController {
     }
 
     @FXML
+    void onMakeup() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/makeup-view.fxml"));
+            Stage stage = new Stage();
+            stage.initOwner(studentTable.getScene().getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Reposições");
+            stage.setScene(new Scene(loader.load(), 780, 500));
+            stage.showAndWait();
+        } catch (Exception e) { showError("Erro ao abrir reposições", e.getMessage()); }
+    }
+
+    @FXML
     void onAgenda() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/agenda-view.fxml"));
@@ -336,13 +353,15 @@ public class MainController {
         if (file == null) return;
         try {
             List<Student> imported = spreadsheetService.importFromXlsx(file);
-            int saved = 0;
+            int inserted = 0, updated = 0;
             for (Student s : imported) {
+                boolean isNew = s.getId() == 0 || !studentService.existsById(s.getId());
+                if (isNew) s.setId(0);
                 studentService.save(s);
-                paymentService.generatePendingMonths(s);
-                saved++;
+                if (isNew) { paymentService.generatePendingMonths(s); inserted++; }
+                else updated++;
             }
-            showInfo("Importação concluída: " + saved + " aluno(s) importado(s).");
+            showInfo("Importação concluída: " + inserted + " novo(s) | " + updated + " atualizado(s).");
             loadStudents();
         } catch (Exception e) { showError("Erro ao importar", e.getMessage()); }
     }
@@ -392,6 +411,76 @@ public class MainController {
                 showInfo("Backup salvo em:\n" + dest.getAbsolutePath());
             } catch (Exception e2) { showError("Erro ao fazer backup", e2.getMessage()); }
         }
+    }
+
+    @FXML
+    void onDeduplicate() {
+        try {
+            int count = studentService.deduplicateStudents();
+            if (count == 0) {
+                showInfo("Nenhum aluno duplicado encontrado.");
+            } else {
+                showInfo(count + " aluno(s) duplicado(s) removido(s).\nPagamentos e aulas associados foram excluídos automaticamente.");
+                loadStudents();
+            }
+        } catch (Exception e) { showError("Erro ao deduplicar", e.getMessage()); }
+    }
+
+    @FXML
+    void onChangePassword() {
+        PasswordField currentPass = new PasswordField();
+        currentPass.setPromptText("Senha atual");
+        TextField newUser = new TextField(authService.getCurrentUsername());
+        newUser.setPromptText("Novo usuário");
+        PasswordField newPass    = new PasswordField();
+        newPass.setPromptText("Nova senha");
+        PasswordField confirmPass = new PasswordField();
+        confirmPass.setPromptText("Confirmar nova senha");
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11px;");
+
+        VBox content = new VBox(6,
+            new Label("Senha atual:"), currentPass,
+            new Label("Novo usuário:"), newUser,
+            new Label("Nova senha:"), newPass,
+            new Label("Confirmar nova senha:"), confirmPass,
+            errorLabel
+        );
+        content.setPadding(new Insets(20));
+        content.setPrefWidth(300);
+
+        Dialog<Void> dlg = new Dialog<>();
+        dlg.initOwner(studentTable.getScene().getWindow());
+        dlg.setTitle("Alterar Acesso");
+        dlg.setHeaderText("Alterar usuário e senha");
+        dlg.getDialogPane().setContent(content);
+
+        ButtonType saveBtn = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
+        dlg.getDialogPane().getButtonTypes().addAll(saveBtn, ButtonType.CANCEL);
+
+        Button saveButton = (Button) dlg.getDialogPane().lookupButton(saveBtn);
+        saveButton.addEventFilter(ActionEvent.ACTION, event -> {
+            String cp   = currentPass.getText();
+            String nu   = newUser.getText().trim();
+            String np   = newPass.getText();
+            String conf = confirmPass.getText();
+
+            if (cp.isBlank())       { errorLabel.setText("Informe a senha atual.");              event.consume(); return; }
+            if (nu.isBlank())       { errorLabel.setText("Usuário não pode ser vazio.");          event.consume(); return; }
+            if (np.isBlank())       { errorLabel.setText("Nova senha não pode ser vazia.");       event.consume(); return; }
+            if (!np.equals(conf))   { errorLabel.setText("As senhas não coincidem.");             event.consume(); return; }
+
+            try {
+                boolean ok = authService.changeCredentials(cp, nu, np);
+                if (!ok) { errorLabel.setText("Senha atual incorreta."); event.consume(); }
+            } catch (Exception ex) {
+                errorLabel.setText("Erro ao salvar: " + ex.getMessage());
+                event.consume();
+            }
+        });
+
+        dlg.setResultConverter(bt -> null);
+        dlg.showAndWait();
     }
 
     private void showError(String title, String msg) {

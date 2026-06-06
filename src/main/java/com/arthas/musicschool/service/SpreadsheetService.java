@@ -14,7 +14,7 @@ public class SpreadsheetService {
     private static final String[] HEADERS = {
         "ID", "Nome", "CPF", "Nascimento", "Telefone", "E-mail", "Endereço",
         "Instrumento", "Nível", "Professor", "Início", "Mensalidade (R$)",
-        "Vencimento (dia)", "Status", "Observações"
+        "Vencimento (dia)", "Status", "Observações", "Dia da Aula", "Horário"
     };
 
     public void exportToXlsx(List<Student> students, File file) throws IOException {
@@ -45,7 +45,8 @@ public class SpreadsheetService {
 
     private Student parseRow(Row row) {
         Student s = new Student();
-        // col 0 = ID (ignorado no import)
+        int id = (int) getLong(row, 0);
+        if (id > 0) s.setId(id);
         s.setName(getString(row, 1));
         s.setCpf(getString(row, 2));
         String birth = getString(row, 3);
@@ -64,6 +65,8 @@ public class SpreadsheetService {
         String status = getString(row, 13);
         if (!status.isBlank()) s.setStatus(status);
         s.setNotes(getString(row, 14));
+        s.setLessonDay(getString(row, 15));
+        s.setLessonTime(getString(row, 16));
         return s;
     }
 
@@ -100,6 +103,8 @@ public class SpreadsheetService {
         row.createCell(12).setCellValue(s.getPaymentDueDay());
         row.createCell(13).setCellValue(safe(s.getStatus()));
         row.createCell(14).setCellValue(safe(s.getNotes()));
+        row.createCell(15).setCellValue(safe(s.getLessonDay()));
+        row.createCell(16).setCellValue(safe(s.getLessonTime()));
     }
 
     private String getString(Row row, int col) {

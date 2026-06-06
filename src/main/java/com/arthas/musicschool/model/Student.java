@@ -22,6 +22,7 @@ public class Student {
     private String photoPath;
     private String lessonDay;
     private String lessonTime;
+    private int makeupPending;
 
     public Student() {
         this.paymentDueDay = 5;
@@ -82,6 +83,9 @@ public class Student {
 
     public String getLessonTime() { return lessonTime; }
     public void setLessonTime(String lessonTime) { this.lessonTime = lessonTime; }
+
+    public int getMakeupPending() { return makeupPending; }
+    public void setMakeupPending(int makeupPending) { this.makeupPending = makeupPending; }
 
     @Override
     public String toString() {

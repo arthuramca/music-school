@@ -15,6 +15,7 @@ import javafx.stage.FileChooser;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 
 public class StudentDialog extends Dialog<Student> {
@@ -25,7 +26,7 @@ public class StudentDialog extends Dialog<Student> {
     private final TextField phoneField      = new TextField();
     private final TextField emailField      = new TextField();
     private final TextField addressField    = new TextField();
-    private final TextField instrumentField = new TextField();
+    private final ComboBox<String> instrumentBox = new ComboBox<>();
     private final ComboBox<String> levelBox = new ComboBox<>();
     private final TextField teacherField    = new TextField();
     private final DatePicker startDatePicker = new DatePicker();
@@ -43,6 +44,11 @@ public class StudentDialog extends Dialog<Student> {
     private static final String[] DAYS  = {"", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
     private static final String[] TIMES = {"", "08:00","09:00","10:00","11:00","12:00","13:00",
                                             "14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"};
+    private static final String[] INSTRUMENTS = {
+        "Bateria", "Baixo", "Canto", "Cavaquinho", "Contrabaixo", "Flauta",
+        "Guitarra", "Percussão", "Piano", "Saxofone", "Teclado", "Trompete",
+        "Ukulele", "Violão", "Violino"
+    };
 
     private final StudentService studentService = new StudentService();
 
@@ -59,12 +65,16 @@ public class StudentDialog extends Dialog<Student> {
         levelBox.setValue("Iniciante");
         statusBox.getItems().addAll("Ativo", "Inativo", "Trancado");
         statusBox.setValue("Ativo");
+        instrumentBox.getItems().addAll(INSTRUMENTS);
+        instrumentBox.setEditable(true);
+        instrumentBox.setPromptText("Selecione ou digite...");
         dayBox.getItems().addAll(DAYS);
         dayBox.setValue("");
         timeBox.getItems().addAll(TIMES);
         timeBox.setValue("");
         dayBox.setOnAction(e  -> updateSlotStatus(student));
         timeBox.setOnAction(e -> updateSlotStatus(student));
+        instrumentBox.valueProperty().addListener((obs, o, v) -> updateSlotStatus(student));
         notesArea.setPrefRowCount(2);
         notesArea.setWrapText(true);
         photoPreview.setFitWidth(70); photoPreview.setFitHeight(70); photoPreview.setPreserveRatio(true);
@@ -78,13 +88,19 @@ public class StudentDialog extends Dialog<Student> {
         ok.setDisable(nameField.getText().isBlank());
         nameField.textProperty().addListener((obs, o, v) -> ok.setDisable(v.isBlank()));
 
-        // Valida capacidade do slot antes de fechar o dialog
+        // Valida capacidade e compatibilidade do slot antes de fechar o dialog
         ok.addEventFilter(ActionEvent.ACTION, event -> {
             String day  = dayBox.getValue();
             String time = timeBox.getValue();
             if (day == null || day.isBlank() || time == null || time.isBlank()) return;
             try {
                 int excludeId = student != null ? student.getId() : 0;
+                if (isIncompatibleSlot(day, time, excludeId)) {
+                    slotStatusLabel.setText("⚠ Horário reservado para alunos de Canto.");
+                    slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
+                    event.consume();
+                    return;
+                }
                 long count = studentService.countBySlot(day, time, excludeId);
                 if (count >= 3) {
                     slotStatusLabel.setText("Horário lotado (máx 3 alunos).");
@@ -114,13 +130,12 @@ public class StudentDialog extends Dialog<Student> {
         phoneField.setPromptText("(11) 99999-9999");
         emailField.setPromptText("email@exemplo.com");
         addressField.setPromptText("Rua, número, bairro...");
-        instrumentField.setPromptText("Violão, Piano, Bateria...");
         teacherField.setPromptText("Nome do professor");
 
         GridPane.setHgrow(nameField, Priority.ALWAYS);
         GridPane.setHgrow(emailField, Priority.ALWAYS);
         GridPane.setHgrow(addressField, Priority.ALWAYS);
-        GridPane.setHgrow(instrumentField, Priority.ALWAYS);
+        GridPane.setHgrow(instrumentBox, Priority.ALWAYS);
         GridPane.setHgrow(teacherField, Priority.ALWAYS);
 
         Button selPhoto = new Button("Selecionar foto...");
@@ -142,7 +157,7 @@ public class StudentDialog extends Dialog<Student> {
         Separator sep = new Separator(); GridPane.setColumnSpan(sep, 2);
         g.add(sep, 0, r++);
 
-        g.add(lbl("Instrumento"),  0, r); g.add(instrumentField,  1, r++);
+        g.add(lbl("Instrumento"),  0, r); g.add(instrumentBox,    1, r++);
         g.add(lbl("Nível"),        0, r); g.add(levelBox,          1, r++);
         g.add(lbl("Professor"),    0, r); g.add(teacherField,      1, r++);
         g.add(lbl("Início"),       0, r); g.add(startDatePicker,   1, r++);
@@ -201,7 +216,7 @@ public class StudentDialog extends Dialog<Student> {
         phoneField.setText(safe(s.getPhone()));
         emailField.setText(safe(s.getEmail()));
         addressField.setText(safe(s.getAddress()));
-        instrumentField.setText(safe(s.getInstrument()));
+        instrumentBox.setValue(safe(s.getInstrument()));
         levelBox.setValue(s.getLevel() != null ? s.getLevel() : "Iniciante");
         teacherField.setText(safe(s.getTeacher()));
         startDatePicker.setValue(s.getStartDate());
@@ -226,7 +241,7 @@ public class StudentDialog extends Dialog<Student> {
         s.setPhone(phoneField.getText().trim());
         s.setEmail(emailField.getText().trim());
         s.setAddress(addressField.getText().trim());
-        s.setInstrument(instrumentField.getText().trim());
+        s.setInstrument(instrumentBox.getValue() != null ? instrumentBox.getValue().trim() : "");
         s.setLevel(levelBox.getValue());
         s.setTeacher(teacherField.getText().trim());
         s.setStartDate(startDatePicker.getValue());
@@ -248,6 +263,11 @@ public class StudentDialog extends Dialog<Student> {
         }
         try {
             int excludeId = current != null ? current.getId() : 0;
+            if (isIncompatibleSlot(day, time, excludeId)) {
+                slotStatusLabel.setText("⚠ Apenas Canto");
+                slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
+                return;
+            }
             long count = studentService.countBySlot(day, time, excludeId);
             slotStatusLabel.setText(switch ((int) count) {
                 case 0  -> "✓ Livre";
@@ -261,6 +281,15 @@ public class StudentDialog extends Dialog<Student> {
                 default -> "#e74c3c;";
             });
         } catch (Exception ignored) { slotStatusLabel.setText(""); }
+    }
+
+    private boolean isIncompatibleSlot(String day, String time, int excludeId) throws Exception {
+        String instr = instrumentBox.getValue() != null ? instrumentBox.getValue().trim() : "";
+        if (!instr.equalsIgnoreCase("Canto")) return false;
+        List<Student> inSlot = studentService.findBySlot(day, time);
+        return inSlot.stream()
+            .filter(s -> s.getId() != excludeId)
+            .anyMatch(s -> !safe(s.getInstrument()).equalsIgnoreCase("Canto"));
     }
 
     private double parseDouble(String v) {

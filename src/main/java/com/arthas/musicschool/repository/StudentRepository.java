@@ -112,12 +112,39 @@ public class StudentRepository {
         return 0;
     }
 
+    public boolean existsById(int id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(
+                "SELECT COUNT(*) FROM students WHERE id=?")) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        }
+    }
+
+    public void adjustMakeupPending(int studentId, int delta) throws SQLException {
+        String sql = "UPDATE students SET makeup_pending = MAX(0, makeup_pending + ?) WHERE id=?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, delta);
+            stmt.setInt(2, studentId);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void zeroMakeupPending(int studentId) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(
+                "UPDATE students SET makeup_pending=0 WHERE id=?")) {
+            stmt.setInt(1, studentId);
+            stmt.executeUpdate();
+        }
+    }
+
     private Student insert(Student s) throws SQLException {
         String sql = """
             INSERT INTO students (name, cpf, birth_date, phone, email, address,
                 instrument, level, teacher, start_date, monthly_fee, payment_due_day,
-                status, notes, photo_path, lesson_day, lesson_time)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                status, notes, photo_path, lesson_day, lesson_time, makeup_pending)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """;
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(stmt, s);
@@ -133,12 +160,12 @@ public class StudentRepository {
         String sql = """
             UPDATE students SET name=?, cpf=?, birth_date=?, phone=?, email=?, address=?,
                 instrument=?, level=?, teacher=?, start_date=?, monthly_fee=?, payment_due_day=?,
-                status=?, notes=?, photo_path=?, lesson_day=?, lesson_time=?
+                status=?, notes=?, photo_path=?, lesson_day=?, lesson_time=?, makeup_pending=?
             WHERE id=?
             """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             bind(stmt, s);
-            stmt.setInt(18, s.getId());
+            stmt.setInt(19, s.getId());
             stmt.executeUpdate();
         }
         return s;
@@ -149,6 +176,25 @@ public class StudentRepository {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
+    }
+
+    public List<Integer> findDuplicateIds() throws SQLException {
+        // Mantém o menor ID para cada nome (case-insensitive); retorna os IDs a excluir
+        String sql = """
+            SELECT id FROM students
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM students GROUP BY LOWER(name)
+            )
+            AND LOWER(name) IN (
+                SELECT LOWER(name) FROM students GROUP BY LOWER(name) HAVING COUNT(*) > 1
+            )
+            """;
+        List<Integer> ids = new ArrayList<>();
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) ids.add(rs.getInt(1));
+        }
+        return ids;
     }
 
     private void bind(PreparedStatement stmt, Student s) throws SQLException {
@@ -169,6 +215,7 @@ public class StudentRepository {
         stmt.setString(15, safe(s.getPhotoPath()));
         stmt.setString(16, safe(s.getLessonDay()));
         stmt.setString(17, safe(s.getLessonTime()));
+        stmt.setInt(18,    s.getMakeupPending());
     }
 
     private Student mapRow(ResultSet rs) throws SQLException {
@@ -191,6 +238,7 @@ public class StudentRepository {
         s.setPhotoPath(rs.getString("photo_path"));
         s.setLessonDay(rs.getString("lesson_day"));
         s.setLessonTime(rs.getString("lesson_time"));
+        s.setMakeupPending(rs.getInt("makeup_pending"));
         return s;
     }
 
