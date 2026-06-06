@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.arthas.musicschool.controller.MainController"
+            styleClass="main-pane"
+            stylesheets="@styles.css">
+    <top>
+        <VBox>
+            <HBox styleClass="toolbar" spacing="10" alignment="CENTER_LEFT">
+                <padding><Insets top="12" right="16" bottom="12" left="16"/></padding>
+                <Label text="🎵 Music School" styleClass="app-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="searchField" promptText="Buscar por nome, instrumento, professor..." prefWidth="280" onAction="#onSearch"/>
+                <Button text="Buscar"  onAction="#onSearch"      styleClass="btn-secondary"/>
+                <Button text="Limpar"  onAction="#onClearSearch" styleClass="btn-secondary"/>
+            </HBox>
+            <HBox styleClass="action-bar" spacing="8" alignment="CENTER_LEFT">
+                <padding><Insets top="6" right="16" bottom="6" left="16"/></padding>
+                <Button text="+ Novo Aluno" onAction="#onNewStudent"  styleClass="btn-primary"/>
+                <Button text="Editar"       onAction="#onEditStudent" styleClass="btn-secondary"/>
+                <Button text="Excluir"      onAction="#onDeleteStudent" styleClass="btn-danger"/>
+                <Separator orientation="VERTICAL"/>
+                <Button text="💰 Pagamentos" onAction="#onPayments" styleClass="btn-payment"/>
+                <Button text="📅 Aulas"      onAction="#onLessons"  styleClass="btn-lesson"/>
+                <Separator orientation="VERTICAL"/>
+                <Label text="Instrumento:" style="-fx-font-weight: bold;"/>
+                <ComboBox fx:id="instrumentFilter" prefWidth="140"/>
+                <Label text="Status:" style="-fx-font-weight: bold;"/>
+                <ComboBox fx:id="statusFilter" prefWidth="110"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="📊 Gráficos"       onAction="#onCharts"  styleClass="btn-chart"/>
+                <Button text="⬆ Exportar .xlsx"  onAction="#onExport"  styleClass="btn-success"/>
+                <Button text="💾 Backup"          onAction="#onBackup"  styleClass="btn-backup"/>
+            </HBox>
+            <Separator/>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="studentTable" tableMenuButtonVisible="true">
+            <columns>
+                <TableColumn fx:id="colPhoto"      text="Foto"        prefWidth="50"  minWidth="44"/>
+                <TableColumn fx:id="colName"       text="Nome"        prefWidth="200" minWidth="120"/>
+                <TableColumn fx:id="colInstrument" text="Instrumento" prefWidth="130" minWidth="80"/>
+                <TableColumn fx:id="colLevel"      text="Nível"       prefWidth="110" minWidth="80"/>
+                <TableColumn fx:id="colTeacher"    text="Professor"   prefWidth="150" minWidth="90"/>
+                <TableColumn fx:id="colStatus"     text="Status"      prefWidth="90"  minWidth="70"/>
+                <TableColumn fx:id="colFee"        text="Mensalidade" prefWidth="110" minWidth="80"/>
+            </columns>
+            <placeholder>
+                <Label text="Nenhum aluno cadastrado. Clique em '+ Novo Aluno' para começar."/>
+            </placeholder>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="10">
+            <padding><Insets top="5" right="16" bottom="5" left="16"/></padding>
+            <Label fx:id="statusLabel" text="Pronto"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="countLabel" text="0 alunos" styleClass="count-label"/>
+        </HBox>
+    </bottom>
+</BorderPane>

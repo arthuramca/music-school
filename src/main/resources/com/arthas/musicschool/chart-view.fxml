@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.arthas.musicschool.controller.ChartController"
+      spacing="10" stylesheets="@styles.css">
+    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+    <Label fx:id="totalLabel" styleClass="chart-total"/>
+    <HBox spacing="20" VBox.vgrow="ALWAYS">
+        <PieChart fx:id="instrumentChart" title="Alunos por Instrumento" HBox.hgrow="ALWAYS" legendVisible="true"/>
+        <PieChart fx:id="statusChart"     title="Alunos por Status"      HBox.hgrow="ALWAYS" legendVisible="true"/>
+    </HBox>
+</VBox>
