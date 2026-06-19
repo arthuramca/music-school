@@ -104,7 +104,10 @@ public class DatabaseManager {
         for (String col : new String[]{
                 "lesson_day TEXT DEFAULT ''",
                 "lesson_time TEXT DEFAULT ''",
-                "makeup_pending INTEGER DEFAULT 0"}) {
+                "makeup_pending INTEGER DEFAULT 0",
+                "instrument2 TEXT DEFAULT ''",
+                "lesson_day2 TEXT DEFAULT ''",
+                "lesson_time2 TEXT DEFAULT ''"}) {
             try (Statement s = conn.createStatement()) {
                 s.execute("ALTER TABLE students ADD COLUMN " + col);
             } catch (SQLException ignored) {}

@@ -33,12 +33,16 @@ public class StudentDialog extends Dialog<Student> {
     private final TextField feeField        = new TextField("0,00");
     private final TextField dueDayField     = new TextField("5");
     private final ComboBox<String> statusBox   = new ComboBox<>();
-    private final ComboBox<String> dayBox      = new ComboBox<>();
-    private final ComboBox<String> timeBox     = new ComboBox<>();
-    private final TextArea notesArea           = new TextArea();
-    private final ImageView photoPreview       = new ImageView();
-    private final Label photoLabel             = new Label("Nenhuma foto");
-    private final Label slotStatusLabel        = new Label();
+    private final ComboBox<String> dayBox       = new ComboBox<>();
+    private final ComboBox<String> timeBox      = new ComboBox<>();
+    private final ComboBox<String> instrumentBox2 = new ComboBox<>();
+    private final ComboBox<String> dayBox2      = new ComboBox<>();
+    private final ComboBox<String> timeBox2     = new ComboBox<>();
+    private final TextArea notesArea            = new TextArea();
+    private final ImageView photoPreview        = new ImageView();
+    private final Label photoLabel              = new Label("Nenhuma foto");
+    private final Label slotStatusLabel         = new Label();
+    private final Label slotStatusLabel2        = new Label();
     private String photoPath = "";
 
     private static final String[] DAYS  = {"", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
@@ -75,6 +79,14 @@ public class StudentDialog extends Dialog<Student> {
         dayBox.setOnAction(e  -> updateSlotStatus(student));
         timeBox.setOnAction(e -> updateSlotStatus(student));
         instrumentBox.valueProperty().addListener((obs, o, v) -> updateSlotStatus(student));
+        instrumentBox2.getItems().addAll(INSTRUMENTS);
+        instrumentBox2.setEditable(true);
+        instrumentBox2.setPromptText("Opcional...");
+        dayBox2.getItems().addAll(DAYS);  dayBox2.setValue("");
+        timeBox2.getItems().addAll(TIMES); timeBox2.setValue("");
+        dayBox2.setOnAction(e  -> updateSlotStatus2(student));
+        timeBox2.setOnAction(e -> updateSlotStatus2(student));
+        instrumentBox2.valueProperty().addListener((obs, o, v) -> updateSlotStatus2(student));
         notesArea.setPrefRowCount(2);
         notesArea.setWrapText(true);
         photoPreview.setFitWidth(70); photoPreview.setFitHeight(70); photoPreview.setPreserveRatio(true);
@@ -88,33 +100,16 @@ public class StudentDialog extends Dialog<Student> {
         ok.setDisable(nameField.getText().isBlank());
         nameField.textProperty().addListener((obs, o, v) -> ok.setDisable(v.isBlank()));
 
-        // Valida capacidade e compatibilidade do slot antes de fechar o dialog
+        // Valida slots antes de salvar
         ok.addEventFilter(ActionEvent.ACTION, event -> {
-            String day  = dayBox.getValue();
-            String time = timeBox.getValue();
-            if (day == null || day.isBlank() || time == null || time.isBlank()) return;
-            try {
-                int excludeId = student != null ? student.getId() : 0;
-                if (isIncompatibleSlot(day, time, excludeId)) {
-                    slotStatusLabel.setText("⚠ Horário reservado para alunos de Canto.");
-                    slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
-                    event.consume();
-                    return;
-                }
-                long count = studentService.countBySlot(day, time, excludeId);
-                if (count >= 3) {
-                    slotStatusLabel.setText("Horário lotado (máx 3 alunos).");
-                    event.consume();
-                } else if (count == 2) {
-                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                        "Este horário já tem 2 alunos. Deseja adicionar um 3º aluno?",
-                        ButtonType.YES, ButtonType.NO);
-                    confirm.setTitle("Horário quase lotado");
-                    confirm.initOwner(getDialogPane().getScene().getWindow());
-                    Optional<ButtonType> result = confirm.showAndWait();
-                    if (result.isEmpty() || result.get() != ButtonType.YES) event.consume();
-                }
-            } catch (Exception ignored) {}
+            int excludeId = student != null ? student.getId() : 0;
+            if (!validateSlot(dayBox.getValue(), timeBox.getValue(), excludeId,
+                    instrumentBox.getValue(), slotStatusLabel, event)) return;
+            // Valida slot2 se preenchido
+            String d2 = dayBox2.getValue(); String t2 = timeBox2.getValue();
+            if (d2 != null && !d2.isBlank() && t2 != null && !t2.isBlank()) {
+                validateSlot(d2, t2, excludeId, instrumentBox2.getValue(), slotStatusLabel2, event);
+            }
         });
 
         setResultConverter(btn -> btn == saveBtn ? buildStudent(student) : null);
@@ -173,11 +168,24 @@ public class StudentDialog extends Dialog<Student> {
 
         HBox slotBox = new HBox(8, dayBox, lbl("Horário:"), timeBox, slotStatusLabel);
         slotBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        dayBox.setPrefWidth(120);
-        timeBox.setPrefWidth(90);
+        dayBox.setPrefWidth(120); timeBox.setPrefWidth(90);
         slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
 
         g.add(lbl("Dia da aula"),      0, r); g.add(slotBox,    1, r++);
+
+        Separator sep3 = new Separator(); GridPane.setColumnSpan(sep3, 2);
+        g.add(sep3, 0, r++);
+        Label sec2 = new Label("2º Instrumento / Horário (opcional)");
+        sec2.setStyle("-fx-font-weight: bold; -fx-text-fill: #7d3c98;");
+        GridPane.setColumnSpan(sec2, 2);
+        g.add(sec2, 0, r++);
+        GridPane.setHgrow(instrumentBox2, Priority.ALWAYS);
+        g.add(lbl("Instrumento 2"),    0, r); g.add(instrumentBox2, 1, r++);
+        HBox slotBox2 = new HBox(8, dayBox2, lbl("Horário:"), timeBox2, slotStatusLabel2);
+        slotBox2.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        dayBox2.setPrefWidth(120); timeBox2.setPrefWidth(90);
+        slotStatusLabel2.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
+        g.add(lbl("Dia da aula 2"),    0, r); g.add(slotBox2,   1, r++);
         g.add(lbl("Observações"),      0, r); g.add(notesArea,   1, r++);
         g.add(lbl("Foto"),             0, r); g.add(photoBox,    1, r);
 
@@ -231,6 +239,9 @@ public class StudentDialog extends Dialog<Student> {
         }
         dayBox.setValue(s.getLessonDay()   != null ? s.getLessonDay()   : "");
         timeBox.setValue(s.getLessonTime() != null ? s.getLessonTime()  : "");
+        instrumentBox2.setValue(safe(s.getInstrument2()));
+        dayBox2.setValue(s.getLessonDay2()   != null ? s.getLessonDay2()   : "");
+        timeBox2.setValue(s.getLessonTime2() != null ? s.getLessonTime2()  : "");
     }
 
     private Student buildStudent(Student existing) {
@@ -252,44 +263,80 @@ public class StudentDialog extends Dialog<Student> {
         s.setPhotoPath(photoPath);
         s.setLessonDay(dayBox.getValue() != null ? dayBox.getValue() : "");
         s.setLessonTime(timeBox.getValue() != null ? timeBox.getValue() : "");
+        s.setInstrument2(instrumentBox2.getValue() != null ? instrumentBox2.getValue().trim() : "");
+        s.setLessonDay2(dayBox2.getValue()   != null ? dayBox2.getValue()   : "");
+        s.setLessonTime2(timeBox2.getValue() != null ? timeBox2.getValue()  : "");
         return s;
     }
 
     private void updateSlotStatus(Student current) {
-        String day  = dayBox.getValue();
-        String time = timeBox.getValue();
+        refreshSlotLabel(dayBox.getValue(), timeBox.getValue(),
+            instrumentBox.getValue(), current, slotStatusLabel);
+    }
+
+    private void updateSlotStatus2(Student current) {
+        refreshSlotLabel(dayBox2.getValue(), timeBox2.getValue(),
+            instrumentBox2.getValue(), current, slotStatusLabel2);
+    }
+
+    private void refreshSlotLabel(String day, String time, String instr, Student current, Label label) {
         if (day == null || day.isBlank() || time == null || time.isBlank()) {
-            slotStatusLabel.setText(""); return;
+            label.setText(""); return;
         }
         try {
             int excludeId = current != null ? current.getId() : 0;
-            if (isIncompatibleSlot(day, time, excludeId)) {
-                slotStatusLabel.setText("⚠ Apenas Canto");
-                slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
+            if (isCantoIncompatible(instr, day, time, excludeId)) {
+                label.setText("⚠ Apenas Canto");
+                label.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
                 return;
             }
             long count = studentService.countBySlot(day, time, excludeId);
-            slotStatusLabel.setText(switch ((int) count) {
+            label.setText(switch ((int) count) {
                 case 0  -> "✓ Livre";
                 case 1  -> "1 aluno";
                 case 2  -> "⚠ 2 alunos (lotado)";
                 default -> "✗ Lotado (máx 3)";
             });
-            slotStatusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + switch ((int) count) {
+            label.setStyle("-fx-font-size: 11px; -fx-text-fill: " + switch ((int) count) {
                 case 0  -> "#27ae60;";
                 case 1  -> "#f39c12;";
                 default -> "#e74c3c;";
             });
-        } catch (Exception ignored) { slotStatusLabel.setText(""); }
+        } catch (Exception ignored) { label.setText(""); }
     }
 
-    private boolean isIncompatibleSlot(String day, String time, int excludeId) throws Exception {
-        String instr = instrumentBox.getValue() != null ? instrumentBox.getValue().trim() : "";
-        if (!instr.equalsIgnoreCase("Canto")) return false;
-        List<Student> inSlot = studentService.findBySlot(day, time);
-        return inSlot.stream()
-            .filter(s -> s.getId() != excludeId)
-            .anyMatch(s -> !safe(s.getInstrument()).equalsIgnoreCase("Canto"));
+    private boolean isCantoIncompatible(String instr, String day, String time, int excludeId) throws Exception {
+        if (instr == null || !instr.trim().equalsIgnoreCase("Canto")) return false;
+        List<String> instruments = studentService.findInstrumentsBySlot(day, time, excludeId);
+        return instruments.stream().anyMatch(i -> !i.equalsIgnoreCase("Canto"));
+    }
+
+    private boolean validateSlot(String day, String time, int excludeId, String instr,
+                                 Label statusLabel, javafx.event.Event event) {
+        if (day == null || day.isBlank() || time == null || time.isBlank()) return true;
+        try {
+            if (isCantoIncompatible(instr, day, time, excludeId)) {
+                statusLabel.setText("⚠ Horário reservado para alunos de Canto.");
+                statusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #e74c3c;");
+                event.consume(); return false;
+            }
+            long count = studentService.countBySlot(day, time, excludeId);
+            if (count >= 3) {
+                statusLabel.setText("Horário lotado (máx 3 alunos).");
+                event.consume(); return false;
+            } else if (count == 2) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Este horário já tem 2 alunos. Deseja adicionar um 3º aluno?",
+                    ButtonType.YES, ButtonType.NO);
+                confirm.setTitle("Horário quase lotado");
+                confirm.initOwner(getDialogPane().getScene().getWindow());
+                Optional<ButtonType> result = confirm.showAndWait();
+                if (result.isEmpty() || result.get() != ButtonType.YES) {
+                    event.consume(); return false;
+                }
+            }
+        } catch (Exception ignored) {}
+        return true;
     }
 
     private double parseDouble(String v) {

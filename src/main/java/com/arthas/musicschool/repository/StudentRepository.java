@@ -100,16 +100,38 @@ public class StudentRepository {
     }
 
     public long countBySlot(String day, String time, int excludeId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM students WHERE lesson_day=? AND lesson_time=? AND id!=?";
+        String sql = """
+            SELECT COUNT(*) FROM students
+            WHERE ((lesson_day=? AND lesson_time=?) OR (lesson_day2=? AND lesson_time2=?))
+            AND id!=?
+            """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, day);
-            stmt.setString(2, time);
-            stmt.setInt(3, excludeId);
+            stmt.setString(1, day); stmt.setString(2, time);
+            stmt.setString(3, day); stmt.setString(4, time);
+            stmt.setInt(5, excludeId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) return rs.getLong(1);
             }
         }
         return 0;
+    }
+
+    public List<String> findInstrumentsBySlot(String day, String time, int excludeId) throws SQLException {
+        List<String> instruments = new ArrayList<>();
+        String sql1 = "SELECT instrument FROM students WHERE lesson_day=? AND lesson_time=? AND id!=?";
+        String sql2 = "SELECT instrument2 FROM students WHERE lesson_day2=? AND lesson_time2=? AND id!=? AND instrument2 != ''";
+        for (String sql : new String[]{sql1, sql2}) {
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setString(1, day); stmt.setString(2, time); stmt.setInt(3, excludeId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        String v = rs.getString(1);
+                        if (v != null && !v.isBlank()) instruments.add(v);
+                    }
+                }
+            }
+        }
+        return instruments;
     }
 
     public boolean existsById(int id) throws SQLException {
@@ -143,8 +165,9 @@ public class StudentRepository {
         String sql = """
             INSERT INTO students (name, cpf, birth_date, phone, email, address,
                 instrument, level, teacher, start_date, monthly_fee, payment_due_day,
-                status, notes, photo_path, lesson_day, lesson_time, makeup_pending)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                status, notes, photo_path, lesson_day, lesson_time, makeup_pending,
+                instrument2, lesson_day2, lesson_time2)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """;
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(stmt, s);
@@ -160,12 +183,13 @@ public class StudentRepository {
         String sql = """
             UPDATE students SET name=?, cpf=?, birth_date=?, phone=?, email=?, address=?,
                 instrument=?, level=?, teacher=?, start_date=?, monthly_fee=?, payment_due_day=?,
-                status=?, notes=?, photo_path=?, lesson_day=?, lesson_time=?, makeup_pending=?
+                status=?, notes=?, photo_path=?, lesson_day=?, lesson_time=?, makeup_pending=?,
+                instrument2=?, lesson_day2=?, lesson_time2=?
             WHERE id=?
             """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             bind(stmt, s);
-            stmt.setInt(19, s.getId());
+            stmt.setInt(22, s.getId());
             stmt.executeUpdate();
         }
         return s;
@@ -216,6 +240,9 @@ public class StudentRepository {
         stmt.setString(16, safe(s.getLessonDay()));
         stmt.setString(17, safe(s.getLessonTime()));
         stmt.setInt(18,    s.getMakeupPending());
+        stmt.setString(19, safe(s.getInstrument2()));
+        stmt.setString(20, safe(s.getLessonDay2()));
+        stmt.setString(21, safe(s.getLessonTime2()));
     }
 
     private Student mapRow(ResultSet rs) throws SQLException {
@@ -239,6 +266,9 @@ public class StudentRepository {
         s.setLessonDay(rs.getString("lesson_day"));
         s.setLessonTime(rs.getString("lesson_time"));
         s.setMakeupPending(rs.getInt("makeup_pending"));
+        s.setInstrument2(rs.getString("instrument2"));
+        s.setLessonDay2(rs.getString("lesson_day2"));
+        s.setLessonTime2(rs.getString("lesson_time2"));
         return s;
     }
 

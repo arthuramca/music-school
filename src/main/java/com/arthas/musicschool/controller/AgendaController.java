@@ -42,12 +42,18 @@ public class AgendaController {
         try {
             List<Student> all = studentService.getAllStudents();
 
-            Map<String, List<Student>> slotMap = new HashMap<>();
+            Map<String, List<Student>> slotMap  = new HashMap<>();
+            Map<String, List<Student>> slot2Map = new HashMap<>();
             for (Student s : all) {
+                if (!"Ativo".equals(s.getStatus())) continue;
                 String day  = s.getLessonDay();
                 String time = s.getLessonTime();
-                if (day == null || day.isBlank() || time == null || time.isBlank()) continue;
-                slotMap.computeIfAbsent(day + "|" + time, k -> new ArrayList<>()).add(s);
+                if (day != null && !day.isBlank() && time != null && !time.isBlank())
+                    slotMap.computeIfAbsent(day + "|" + time, k -> new ArrayList<>()).add(s);
+                String day2  = s.getLessonDay2();
+                String time2 = s.getLessonTime2();
+                if (day2 != null && !day2.isBlank() && time2 != null && !time2.isBlank())
+                    slot2Map.computeIfAbsent(day2 + "|" + time2, k -> new ArrayList<>()).add(s);
             }
 
             Map<String, List<Makeup>> makeupMap = new HashMap<>();
@@ -76,8 +82,9 @@ public class AgendaController {
                 for (int d = 0; d < DAYS.length; d++) {
                     String key = DAYS[d] + "|" + TIMES[t];
                     List<Student> inSlot  = slotMap.getOrDefault(key, List.of());
+                    List<Student> inSlot2 = slot2Map.getOrDefault(key, List.of());
                     List<Makeup>  makeups = makeupMap.getOrDefault(key, List.of());
-                    grid.add(slotCell(inSlot, makeups), d + 1, t + 1);
+                    grid.add(slotCell(inSlot, inSlot2, makeups), d + 1, t + 1);
                 }
             }
 
@@ -106,13 +113,13 @@ public class AgendaController {
         return l;
     }
 
-    private VBox slotCell(List<Student> students, List<Makeup> makeups) {
+    private VBox slotCell(List<Student> students, List<Student> students2, List<Makeup> makeups) {
         VBox box = new VBox(3);
         box.setPadding(new Insets(4, 6, 4, 6));
         box.setMinHeight(48);
         box.setMaxWidth(Double.MAX_VALUE);
 
-        int total = students.size() + makeups.size();
+        int total = students.size() + students2.size() + makeups.size();
         String bg = total == 0 ? "#f8f9fa" : total <= 2 ? "#d5f5e3" : "#fdebd0";
         box.setStyle("-fx-background-color:" + bg + "; -fx-border-color: #dfe6e9; -fx-border-width: 1;");
 
@@ -124,6 +131,22 @@ public class AgendaController {
             instr.setStyle("-fx-font-size: 10px; -fx-text-fill: #7f8c8d;");
             entry.getChildren().addAll(name, instr);
 
+            ContextMenu menu = studentMenu(s);
+            entry.setOnContextMenuRequested(e -> menu.show(entry, e.getScreenX(), e.getScreenY()));
+            entry.setOnMouseClicked(e -> { if (e.getClickCount() == 2) openEditStudent(s); });
+            entry.setStyle("-fx-cursor: hand;");
+            box.getChildren().add(entry);
+        }
+
+        for (Student s : students2) {
+            VBox entry = new VBox(1);
+            Label name  = new Label("(2) " + s.getName());
+            name.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1a5276; -fx-cursor: hand;");
+            String instr2 = s.getInstrument2() != null && !s.getInstrument2().isBlank()
+                ? s.getInstrument2() : "";
+            Label instr = new Label(instr2);
+            instr.setStyle("-fx-font-size: 10px; -fx-text-fill: #2980b9;");
+            entry.getChildren().addAll(name, instr);
             ContextMenu menu = studentMenu(s);
             entry.setOnContextMenuRequested(e -> menu.show(entry, e.getScreenX(), e.getScreenY()));
             entry.setOnMouseClicked(e -> { if (e.getClickCount() == 2) openEditStudent(s); });

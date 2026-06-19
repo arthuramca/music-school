@@ -14,7 +14,8 @@ public class SpreadsheetService {
     private static final String[] HEADERS = {
         "ID", "Nome", "CPF", "Nascimento", "Telefone", "E-mail", "Endereço",
         "Instrumento", "Nível", "Professor", "Início", "Mensalidade (R$)",
-        "Vencimento (dia)", "Status", "Observações", "Dia da Aula", "Horário"
+        "Vencimento (dia)", "Status", "Observações", "Dia da Aula", "Horário",
+        "Instrumento 2", "Dia da Aula 2", "Horário 2"
     };
 
     public void exportToXlsx(List<Student> students, File file) throws IOException {
@@ -67,6 +68,9 @@ public class SpreadsheetService {
         s.setNotes(getString(row, 14));
         s.setLessonDay(getString(row, 15));
         s.setLessonTime(getString(row, 16));
+        s.setInstrument2(getString(row, 17));
+        s.setLessonDay2(getString(row, 18));
+        s.setLessonTime2(getString(row, 19));
         return s;
     }
 
@@ -105,6 +109,9 @@ public class SpreadsheetService {
         row.createCell(14).setCellValue(safe(s.getNotes()));
         row.createCell(15).setCellValue(safe(s.getLessonDay()));
         row.createCell(16).setCellValue(safe(s.getLessonTime()));
+        row.createCell(17).setCellValue(safe(s.getInstrument2()));
+        row.createCell(18).setCellValue(safe(s.getLessonDay2()));
+        row.createCell(19).setCellValue(safe(s.getLessonTime2()));
     }
 
     private String getString(Row row, int col) {

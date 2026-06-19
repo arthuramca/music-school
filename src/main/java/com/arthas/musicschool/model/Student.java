@@ -22,6 +22,9 @@ public class Student {
     private String photoPath;
     private String lessonDay;
     private String lessonTime;
+    private String instrument2;
+    private String lessonDay2;
+    private String lessonTime2;
     private int makeupPending;
 
     public Student() {
@@ -83,6 +86,15 @@ public class Student {
 
     public String getLessonTime() { return lessonTime; }
     public void setLessonTime(String lessonTime) { this.lessonTime = lessonTime; }
+
+    public String getInstrument2() { return instrument2; }
+    public void setInstrument2(String instrument2) { this.instrument2 = instrument2; }
+
+    public String getLessonDay2()  { return lessonDay2; }
+    public void setLessonDay2(String lessonDay2) { this.lessonDay2 = lessonDay2; }
+
+    public String getLessonTime2() { return lessonTime2; }
+    public void setLessonTime2(String lessonTime2) { this.lessonTime2 = lessonTime2; }
 
     public int getMakeupPending() { return makeupPending; }
     public void setMakeupPending(int makeupPending) { this.makeupPending = makeupPending; }

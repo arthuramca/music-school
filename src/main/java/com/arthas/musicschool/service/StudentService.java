@@ -33,6 +33,10 @@ public class StudentService {
         return repository.countBySlot(day, time, excludeId);
     }
 
+    public List<String> findInstrumentsBySlot(String day, String time, int excludeId) throws SQLException {
+        return repository.findInstrumentsBySlot(day, time, excludeId);
+    }
+
     public int deduplicateStudents() throws SQLException {
         List<Integer> ids = repository.findDuplicateIds();
         for (int id : ids) repository.delete(id);
