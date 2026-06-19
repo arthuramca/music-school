@@ -9,45 +9,71 @@
             stylesheets="@styles.css">
     <top>
         <VBox>
+            <!-- Barra superior: logo + busca -->
             <HBox styleClass="toolbar" spacing="10" alignment="CENTER_LEFT">
-                <padding><Insets top="12" right="16" bottom="12" left="16"/></padding>
+                <padding><Insets top="10" right="16" bottom="10" left="16"/></padding>
                 <Label text="🎵 Music School" styleClass="app-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <TextField fx:id="searchField" promptText="Buscar por nome, instrumento, professor..." prefWidth="280" onAction="#onSearch"/>
-                <Button text="Buscar"  onAction="#onSearch"      styleClass="btn-secondary"/>
-                <Button text="Limpar"  onAction="#onClearSearch" styleClass="btn-secondary"/>
+                <TextField fx:id="searchField" promptText="Buscar por nome, instrumento, professor..."
+                           prefWidth="300" onAction="#onSearch"/>
+                <Button text="Buscar"  onAction="#onSearch"       styleClass="btn-secondary"/>
+                <Button text="Limpar"  onAction="#onClearSearch"  styleClass="btn-secondary"/>
                 <Separator orientation="VERTICAL"/>
-                <Button text="Acesso" onAction="#onChangePassword" styleClass="btn-secondary">
-                    <tooltip><Tooltip text="Alterar usuário e senha"/></tooltip>
-                </Button>
                 <Button text="⛶" onAction="#onToggleFullscreen" styleClass="btn-secondary" prefWidth="32">
                     <tooltip><Tooltip text="Tela cheia (F11)"/></tooltip>
                 </Button>
             </HBox>
-            <HBox styleClass="action-bar" spacing="8" alignment="CENTER_LEFT">
+
+            <!-- MenuBar principal -->
+            <MenuBar fx:id="appMenuBar" styleClass="app-menu-bar">
+                <menus>
+                    <Menu text="Alunos">
+                        <items>
+                            <MenuItem text="+ Novo Aluno"   onAction="#onNewStudent"/>
+                            <MenuItem text="Editar"         onAction="#onEditStudent"/>
+                            <MenuItem text="Excluir"        onAction="#onDeleteStudent"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Pagamentos"     onAction="#onPayments"/>
+                            <MenuItem text="Aulas"          onAction="#onLessons"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Deduplicar"     onAction="#onDeduplicate"/>
+                        </items>
+                    </Menu>
+                    <Menu text="Agenda">
+                        <items>
+                            <MenuItem text="Agenda Semanal" onAction="#onAgenda"/>
+                            <MenuItem text="Reposições"     onAction="#onMakeup"/>
+                            <MenuItem text="Fila de Espera" onAction="#onWaitlist"/>
+                        </items>
+                    </Menu>
+                    <Menu text="Relatórios">
+                        <items>
+                            <MenuItem text="Gráficos"       onAction="#onCharts"/>
+                            <MenuItem text="Gerar PDF"      onAction="#onGeneratePdf"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Exportar .xlsx" onAction="#onExport"/>
+                            <MenuItem text="Importar .xlsx" onAction="#onImport"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Backup"         onAction="#onBackup"/>
+                        </items>
+                    </Menu>
+                    <Menu text="Configurações">
+                        <items>
+                            <MenuItem text="Alterar Acesso" onAction="#onChangePassword"/>
+                        </items>
+                    </Menu>
+                </menus>
+            </MenuBar>
+
+            <!-- Barra de filtros -->
+            <HBox styleClass="filter-bar" spacing="10" alignment="CENTER_LEFT">
                 <padding><Insets top="6" right="16" bottom="6" left="16"/></padding>
-                <Button text="+ Novo Aluno"  onAction="#onNewStudent"    styleClass="btn-primary"/>
-                <Button text="Editar"        onAction="#onEditStudent"   styleClass="btn-secondary"/>
-                <Button text="Excluir"       onAction="#onDeleteStudent" styleClass="btn-danger"/>
-                <Separator orientation="VERTICAL"/>
-                <Button text="💰 Pagamentos" onAction="#onPayments"      styleClass="btn-payment"/>
-                <Button text="📅 Aulas"      onAction="#onLessons"       styleClass="btn-lesson"/>
-                <Separator orientation="VERTICAL"/>
-                <Label text="Instrumento:" style="-fx-font-weight: bold;"/>
-                <ComboBox fx:id="instrumentFilter" prefWidth="140"/>
-                <Label text="Status:" style="-fx-font-weight: bold;"/>
-                <ComboBox fx:id="statusFilter" prefWidth="110"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="📊 Gráficos"      onAction="#onCharts"       styleClass="btn-chart"/>
-                <Button text="Reposicao"         onAction="#onMakeup"       styleClass="btn-makeup"/>
-                <Button text="🗓 Agenda"         onAction="#onAgenda"       styleClass="btn-agenda"/>
-                <Button text="⏳ Fila Espera"    onAction="#onWaitlist"     styleClass="btn-waitlist"/>
-                <Button text="Deduplicar"        onAction="#onDeduplicate"  styleClass="btn-secondary"/>
-                <Button text="⬇ Importar"       onAction="#onImport"       styleClass="btn-secondary"/>
-                <Button text="⬆ Exportar .xlsx" onAction="#onExport"       styleClass="btn-success"/>
-                <Button text="📄 Gerar PDF"      onAction="#onGeneratePdf"  styleClass="btn-pdf"/>
-                <Button text="💾 Backup"         onAction="#onBackup"       styleClass="btn-backup"/>
+                <Label text="Instrumento:" style="-fx-font-weight: bold; -fx-font-size: 12px;"/>
+                <ComboBox fx:id="instrumentFilter" prefWidth="150"/>
+                <Label text="Status:" style="-fx-font-weight: bold; -fx-font-size: 12px;"/>
+                <ComboBox fx:id="statusFilter" prefWidth="120"/>
             </HBox>
+
             <Separator/>
         </VBox>
     </top>
@@ -64,7 +90,7 @@
                 <TableColumn fx:id="colFee"        text="Mensalidade" prefWidth="110" minWidth="80"/>
             </columns>
             <placeholder>
-                <Label text="Nenhum aluno cadastrado. Clique em '+ Novo Aluno' para começar."/>
+                <Label text="Nenhum aluno cadastrado. Use Alunos › + Novo Aluno para começar."/>
             </placeholder>
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>

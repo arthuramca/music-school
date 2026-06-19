@@ -29,10 +29,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainController {
 
+    @FXML private MenuBar appMenuBar;
     @FXML private TextField searchField;
     @FXML private ComboBox<String> instrumentFilter;
     @FXML private ComboBox<String> statusFilter;
@@ -67,6 +69,7 @@ public class MainController {
         loadStudents();
         startClock();
         setupContextMenu();
+        transformMenuItems();
         studentTable.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) onEditStudent();
         });
@@ -75,6 +78,34 @@ public class MainController {
                 if (e.getCode() == KeyCode.F11) onToggleFullscreen();
             })
         );
+    }
+
+    private void transformMenuItems() {
+        for (Menu menu : appMenuBar.getMenus()) {
+            List<MenuItem> transformed = new ArrayList<>();
+            for (MenuItem item : menu.getItems()) {
+                if (item instanceof SeparatorMenuItem) { transformed.add(item); continue; }
+                transformed.add(styledMenuItem(item.getText(), item.getOnAction()));
+            }
+            menu.getItems().setAll(transformed);
+        }
+    }
+
+    private CustomMenuItem styledMenuItem(String text, javafx.event.EventHandler<ActionEvent> action) {
+        boolean danger = text.contains("Excluir");
+        String color   = danger ? "#e74c3c" : "#2c3e50";
+        String hoverBg = danger ? "#c0392b" : "#3498db";
+        Label lbl = new Label(text);
+        lbl.setPrefWidth(210);
+        lbl.setPadding(new Insets(7, 16, 7, 12));
+        String normal = "-fx-text-fill:" + color + "; -fx-font-size:13px; -fx-background-color:transparent; -fx-cursor:hand;";
+        String hover  = "-fx-text-fill:white; -fx-font-size:13px; -fx-background-color:" + hoverBg + "; -fx-cursor:hand;";
+        lbl.setStyle(normal);
+        lbl.setOnMouseEntered(e -> lbl.setStyle(hover));
+        lbl.setOnMouseExited(e -> lbl.setStyle(normal));
+        CustomMenuItem item = new CustomMenuItem(lbl, true);
+        if (action != null) item.setOnAction(action);
+        return item;
     }
 
     private void setupContextMenu() {
