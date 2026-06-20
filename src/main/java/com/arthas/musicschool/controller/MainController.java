@@ -6,6 +6,7 @@ import com.arthas.musicschool.service.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -24,6 +25,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -39,7 +41,7 @@ public class MainController {
     @FXML private ComboBox<String> instrumentFilter;
     @FXML private ComboBox<String> statusFilter;
     @FXML private TableView<Student> studentTable;
-    @FXML private TableColumn<Student, String> colPhoto;
+    @FXML private TableColumn<Student, byte[]> colPhoto;
     @FXML private TableColumn<Student, String> colName;
     @FXML private TableColumn<Student, String> colInstrument;
     @FXML private TableColumn<Student, String> colLevel;
@@ -180,18 +182,16 @@ public class MainController {
             private final ImageView view = new ImageView();
             { view.setFitWidth(36); view.setFitHeight(36); view.setPreserveRatio(true); }
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(byte[] item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null || item.isBlank()) { setGraphic(null); return; }
+                if (empty || item == null || item.length == 0) { setGraphic(null); return; }
                 try {
-                    if (Files.exists(Paths.get(item))) {
-                        view.setImage(new Image("file:" + item, 36, 36, true, true));
-                        setGraphic(view);
-                    } else { setGraphic(null); }
+                    view.setImage(new Image(new ByteArrayInputStream(item), 36, 36, true, true));
+                    setGraphic(view);
                 } catch (Exception ignored) { setGraphic(null); }
             }
         });
-        colPhoto.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getPhotoPath()));
+        colPhoto.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getPhoto()));
         colName.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getName()));
         colInstrument.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue().getInstrument())));
         colLevel.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue().getLevel())));

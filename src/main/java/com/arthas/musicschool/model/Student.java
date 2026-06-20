@@ -19,7 +19,7 @@ public class Student {
     private int paymentDueDay;
     private String status;
     private String notes;
-    private String photoPath;
+    private byte[] photo;
     private String lessonDay;
     private String lessonTime;
     private String instrument2;
@@ -78,8 +78,8 @@ public class Student {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
-    public String getPhotoPath() { return photoPath; }
-    public void setPhotoPath(String photoPath) { this.photoPath = photoPath; }
+    public byte[] getPhoto() { return photo; }
+    public void setPhoto(byte[] photo) { this.photo = photo; }
 
     public String getLessonDay()  { return lessonDay; }
     public void setLessonDay(String lessonDay)   { this.lessonDay  = lessonDay; }
