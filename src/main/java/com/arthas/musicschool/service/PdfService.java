@@ -7,6 +7,7 @@ import com.arthas.musicschool.repository.LessonRepository;
 import com.arthas.musicschool.repository.PaymentRepository;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
 import com.lowagie.text.pdf.*;
 
 import java.awt.Color;
@@ -40,14 +41,36 @@ public class PdfService {
         Font thFont      = new Font(Font.HELVETICA,  9, Font.BOLD,   Color.WHITE);
         Font tdFont      = new Font(Font.HELVETICA,  9, Font.NORMAL, Color.BLACK);
 
-        // Cabeçalho
-        Paragraph title = new Paragraph("FICHA CADASTRAL DO ALUNO", titleFont);
-        title.setAlignment(Element.ALIGN_CENTER);
-        doc.add(title);
-        Paragraph sub = new Paragraph("Music School", new Font(Font.HELVETICA, 10, Font.ITALIC, Color.GRAY));
-        sub.setAlignment(Element.ALIGN_CENTER);
-        doc.add(sub);
-        doc.add(Chunk.NEWLINE);
+        // Cabeçalho com foto à esquerda e título à direita
+        PdfPTable header = new PdfPTable(new float[]{1, 4});
+        header.setWidthPercentage(100);
+        header.setSpacingAfter(10);
+
+        PdfPCell photoCell = new PdfPCell();
+        photoCell.setBorder(Rectangle.NO_BORDER);
+        photoCell.setPadding(4);
+        byte[] photoData = student.getPhoto();
+        if (photoData != null && photoData.length > 0) {
+            try {
+                Image img = Image.getInstance(photoData);
+                img.scaleToFit(80, 80);
+                photoCell.addElement(img);
+            } catch (Exception ignored) {}
+        }
+        header.addCell(photoCell);
+
+        PdfPCell titleCell = new PdfPCell();
+        titleCell.setBorder(Rectangle.NO_BORDER);
+        titleCell.setPadding(4);
+        titleCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        Paragraph titlePar = new Paragraph(student.getName() != null ? student.getName() : "FICHA CADASTRAL", titleFont);
+        titlePar.setSpacingAfter(3);
+        titleCell.addElement(titlePar);
+        titleCell.addElement(new Paragraph("FICHA CADASTRAL DO ALUNO  •  Music School",
+                new Font(Font.HELVETICA, 10, Font.ITALIC, Color.GRAY)));
+        header.addCell(titleCell);
+
+        doc.add(header);
 
         // Dados pessoais
         addSection(doc, sectionFont, "DADOS PESSOAIS");

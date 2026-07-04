@@ -165,7 +165,7 @@ public class StudentRepository {
         String sql = """
             INSERT INTO students (name, cpf, birth_date, phone, email, address,
                 instrument, level, teacher, start_date, monthly_fee, payment_due_day,
-                status, notes, photo_path, lesson_day, lesson_time, makeup_pending,
+                status, notes, photo, lesson_day, lesson_time, makeup_pending,
                 instrument2, lesson_day2, lesson_time2)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """;
@@ -183,7 +183,7 @@ public class StudentRepository {
         String sql = """
             UPDATE students SET name=?, cpf=?, birth_date=?, phone=?, email=?, address=?,
                 instrument=?, level=?, teacher=?, start_date=?, monthly_fee=?, payment_due_day=?,
-                status=?, notes=?, photo_path=?, lesson_day=?, lesson_time=?, makeup_pending=?,
+                status=?, notes=?, photo=?, lesson_day=?, lesson_time=?, makeup_pending=?,
                 instrument2=?, lesson_day2=?, lesson_time2=?
             WHERE id=?
             """;
@@ -236,7 +236,7 @@ public class StudentRepository {
         stmt.setInt(12,    s.getPaymentDueDay());
         stmt.setString(13, safe(s.getStatus()));
         stmt.setString(14, safe(s.getNotes()));
-        stmt.setString(15, safe(s.getPhotoPath()));
+        stmt.setBytes(15,  s.getPhoto());
         stmt.setString(16, safe(s.getLessonDay()));
         stmt.setString(17, safe(s.getLessonTime()));
         stmt.setInt(18,    s.getMakeupPending());
@@ -262,7 +262,7 @@ public class StudentRepository {
         s.setPaymentDueDay(rs.getInt("payment_due_day"));
         s.setStatus(rs.getString("status"));
         s.setNotes(rs.getString("notes"));
-        s.setPhotoPath(rs.getString("photo_path"));
+        s.setPhoto(rs.getBytes("photo"));
         s.setLessonDay(rs.getString("lesson_day"));
         s.setLessonTime(rs.getString("lesson_time"));
         s.setMakeupPending(rs.getInt("makeup_pending"));

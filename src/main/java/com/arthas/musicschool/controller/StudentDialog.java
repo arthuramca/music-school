@@ -12,9 +12,9 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,8 +43,6 @@ public class StudentDialog extends Dialog<Student> {
     private final Label photoLabel              = new Label("Nenhuma foto");
     private final Label slotStatusLabel         = new Label();
     private final Label slotStatusLabel2        = new Label();
-    private String photoPath = "";
-
     private static final String[] DAYS  = {"", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
     private static final String[] TIMES = {"", "08:00","09:00","10:00","11:00","12:00","13:00",
                                             "14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"};
@@ -53,6 +51,8 @@ public class StudentDialog extends Dialog<Student> {
         "Guitarra", "Percussão", "Piano", "Saxofone", "Teclado", "Trompete",
         "Ukulele", "Violão", "Violino"
     };
+
+    private byte[] photoBytes = null;
 
     private final StudentService studentService = new StudentService();
 
@@ -198,22 +198,24 @@ public class StudentDialog extends Dialog<Student> {
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Imagens", "*.png","*.jpg","*.jpeg","*.gif","*.bmp"));
         File f = fc.showOpenDialog(getDialogPane().getScene().getWindow());
         if (f != null) {
-            photoPath = f.getAbsolutePath();
-            loadPreview(photoPath);
-            photoLabel.setText(f.getName());
+            try {
+                photoBytes = Files.readAllBytes(f.toPath());
+                loadPreviewFromBytes(photoBytes);
+                photoLabel.setText(f.getName());
+            } catch (Exception ignored) {}
         }
     }
 
     private void clearPhoto() {
-        photoPath = "";
+        photoBytes = null;
         photoPreview.setImage(null);
         photoLabel.setText("Nenhuma foto");
     }
 
-    private void loadPreview(String path) {
+    private void loadPreviewFromBytes(byte[] bytes) {
         try {
-            if (path != null && !path.isBlank() && Files.exists(Paths.get(path)))
-                photoPreview.setImage(new Image("file:" + path, 70, 70, true, true));
+            if (bytes != null && bytes.length > 0)
+                photoPreview.setImage(new Image(new ByteArrayInputStream(bytes), 70, 70, true, true));
         } catch (Exception ignored) {}
     }
 
@@ -232,10 +234,10 @@ public class StudentDialog extends Dialog<Student> {
         dueDayField.setText(String.valueOf(s.getPaymentDueDay()));
         statusBox.setValue(s.getStatus() != null ? s.getStatus() : "Ativo");
         notesArea.setText(safe(s.getNotes()));
-        photoPath = safe(s.getPhotoPath());
-        if (!photoPath.isBlank()) {
-            loadPreview(photoPath);
-            photoLabel.setText(Paths.get(photoPath).getFileName().toString());
+        photoBytes = s.getPhoto();
+        if (photoBytes != null && photoBytes.length > 0) {
+            loadPreviewFromBytes(photoBytes);
+            photoLabel.setText("Foto salva no banco");
         }
         dayBox.setValue(s.getLessonDay()   != null ? s.getLessonDay()   : "");
         timeBox.setValue(s.getLessonTime() != null ? s.getLessonTime()  : "");
@@ -260,7 +262,7 @@ public class StudentDialog extends Dialog<Student> {
         s.setPaymentDueDay(parseInt(dueDayField.getText(), 5));
         s.setStatus(statusBox.getValue());
         s.setNotes(notesArea.getText().trim());
-        s.setPhotoPath(photoPath);
+        s.setPhoto(photoBytes);
         s.setLessonDay(dayBox.getValue() != null ? dayBox.getValue() : "");
         s.setLessonTime(timeBox.getValue() != null ? timeBox.getValue() : "");
         s.setInstrument2(instrumentBox2.getValue() != null ? instrumentBox2.getValue().trim() : "");
