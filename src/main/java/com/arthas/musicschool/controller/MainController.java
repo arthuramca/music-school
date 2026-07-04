@@ -423,6 +423,11 @@ public class MainController {
     }
 
     @FXML
+    void onFinancialReport() {
+        new FinancialReportDialog(studentTable.getScene().getWindow()).showAndWait();
+    }
+
+    @FXML
     void onCharts() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/arthas/musicschool/chart-view.fxml"));

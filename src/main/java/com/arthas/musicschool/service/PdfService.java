@@ -1,5 +1,7 @@
 package com.arthas.musicschool.service;
 
+import com.arthas.musicschool.model.FinancialReport;
+import com.arthas.musicschool.model.FinancialReportItem;
 import com.arthas.musicschool.model.Lesson;
 import com.arthas.musicschool.model.Payment;
 import com.arthas.musicschool.model.Student;
@@ -204,6 +206,102 @@ public class PdfService {
     private PdfPCell cell(String text, Font font) {
         PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", font));
         c.setPadding(5);
+        return c;
+    }
+
+    public void generateFinancialReport(FinancialReport report, File file) throws Exception {
+        Document doc = new Document(PageSize.A4, 40, 40, 50, 40);
+        PdfWriter.getInstance(doc, new FileOutputStream(file));
+        doc.open();
+
+        Font titleFont   = new Font(Font.HELVETICA, 16, Font.BOLD,   new Color(44, 62, 80));
+        Font subFont     = new Font(Font.HELVETICA, 10, Font.ITALIC,  Color.GRAY);
+        Font sectionFont = new Font(Font.HELVETICA, 11, Font.BOLD,   new Color(52, 152, 219));
+        Font thFont      = new Font(Font.HELVETICA,  9, Font.BOLD,   Color.WHITE);
+        Font tdFont      = new Font(Font.HELVETICA,  9, Font.NORMAL, Color.BLACK);
+        Font cardLbl     = new Font(Font.HELVETICA,  8, Font.BOLD,   Color.GRAY);
+        Font cardVal     = new Font(Font.HELVETICA, 13, Font.BOLD,   Color.BLACK);
+
+        // Título
+        Paragraph title = new Paragraph("RELATÓRIO FINANCEIRO MENSAL", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        doc.add(title);
+        Paragraph sub = new Paragraph("Music School  •  " + report.getMonthLabel(), subFont);
+        sub.setAlignment(Element.ALIGN_CENTER);
+        doc.add(sub);
+        doc.add(Chunk.NEWLINE);
+
+        // Cards de totais (3 colunas)
+        PdfPTable cards = new PdfPTable(3);
+        cards.setWidthPercentage(100);
+        cards.setSpacingAfter(14);
+        cards.addCell(financialCard("TOTAL PREVISTO",
+                String.format("R$ %.2f", report.getTotalPrevisto()),
+                new Color(41, 128, 185), cardLbl, cardVal));
+        cards.addCell(financialCard("TOTAL APURADO",
+                String.format("R$ %.2f", report.getTotalApurado()),
+                new Color(39, 174, 96), cardLbl, cardVal));
+        cards.addCell(financialCard("TOTAL PENDENTE",
+                String.format("R$ %.2f", report.getTotalPendente()),
+                new Color(231, 76, 60), cardLbl, cardVal));
+        doc.add(cards);
+
+        // Resumo numérico
+        int total   = report.getItems().size();
+        long pagos  = report.getItems().stream().filter(i -> "Pago".equals(i.getPaymentStatus())).count();
+        long pend   = report.getItems().stream().filter(i ->
+                "Pendente".equals(i.getPaymentStatus()) || "Atrasado".equals(i.getPaymentStatus())
+                || "Sem registro".equals(i.getPaymentStatus())).count();
+
+        addSection(doc, sectionFont, "RESUMO");
+        doc.add(new Paragraph(
+            "Alunos ativos: " + total +
+            "   |   Pagos: " + pagos +
+            "   |   Pendentes: " + pend,
+            new Font(Font.HELVETICA, 10, Font.NORMAL, Color.BLACK)));
+        doc.add(Chunk.NEWLINE);
+
+        // Tabela detalhada
+        addSection(doc, sectionFont, "DETALHAMENTO POR ALUNO");
+        PdfPTable tbl = new PdfPTable(new float[]{3, 2, 2, 2, 2, 2});
+        tbl.setWidthPercentage(100);
+        for (String h : new String[]{"Nome", "Instrumento", "Mensalidade", "Status", "Valor Pago", "Data Pagamento"}) {
+            PdfPCell c = new PdfPCell(new Phrase(h, thFont));
+            c.setBackgroundColor(new Color(44, 62, 80));
+            c.setPadding(5);
+            tbl.addCell(c);
+        }
+        for (FinancialReportItem item : report.getItems()) {
+            Color statusColor = switch (item.getPaymentStatus()) {
+                case "Pago"         -> new Color(39, 174, 96);
+                case "Isento"       -> new Color(41, 128, 185);
+                case "Atrasado"     -> new Color(231, 76, 60);
+                case "Sem registro" -> new Color(149, 165, 166);
+                default             -> new Color(230, 126, 34);
+            };
+            tbl.addCell(cell(item.getStudentName(), tdFont));
+            tbl.addCell(cell(safe(item.getInstrument()), tdFont));
+            tbl.addCell(cell(String.format("R$ %.2f", item.getMonthlyFee()), tdFont));
+            tbl.addCell(cell(item.getPaymentStatus(), new Font(Font.HELVETICA, 9, Font.BOLD, statusColor)));
+            tbl.addCell(cell(item.getAmountPaid() > 0 ? String.format("R$ %.2f", item.getAmountPaid()) : "—", tdFont));
+            tbl.addCell(cell(item.getPaidDate() != null && !item.getPaidDate().isBlank() ? item.getPaidDate() : "—", tdFont));
+        }
+        doc.add(tbl);
+
+        doc.close();
+    }
+
+    private PdfPCell financialCard(String label, String value, Color accent, Font lFont, Font vFont) {
+        PdfPCell c = new PdfPCell();
+        c.setPadding(10);
+        c.setBorderColor(accent);
+        c.setBorderWidth(2);
+        Paragraph lp = new Paragraph(label, lFont);
+        lp.setAlignment(Element.ALIGN_CENTER);
+        Paragraph vp = new Paragraph(value, new Font(Font.HELVETICA, 13, Font.BOLD, accent));
+        vp.setAlignment(Element.ALIGN_CENTER);
+        c.addElement(lp);
+        c.addElement(vp);
         return c;
     }
 

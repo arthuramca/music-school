@@ -48,8 +48,9 @@
                     </Menu>
                     <Menu text="Relatórios">
                         <items>
-                            <MenuItem text="Gráficos"       onAction="#onCharts"/>
-                            <MenuItem text="Gerar PDF"      onAction="#onGeneratePdf"/>
+                            <MenuItem text="Gráficos"             onAction="#onCharts"/>
+                            <MenuItem text="Relatório Financeiro" onAction="#onFinancialReport"/>
+                            <MenuItem text="Gerar PDF"            onAction="#onGeneratePdf"/>
                             <SeparatorMenuItem/>
                             <MenuItem text="Exportar .xlsx" onAction="#onExport"/>
                             <MenuItem text="Importar .xlsx" onAction="#onImport"/>
